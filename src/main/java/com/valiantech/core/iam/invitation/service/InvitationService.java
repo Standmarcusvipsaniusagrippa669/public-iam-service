@@ -11,6 +11,8 @@ import com.valiantech.core.iam.exception.NotFoundException;
 import com.valiantech.core.iam.user.dto.CreateUserRequest;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import com.valiantech.core.iam.user.service.UserService;
+import com.valiantech.core.iam.usercompany.model.UserCompany;
+import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
 import com.valiantech.core.iam.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -36,6 +39,12 @@ public class InvitationService {
 
         CompanyResponse company = companyService.getCompany(request.companyId());
         ValidationUtils.validateCompanyIsActive(company);
+
+        Optional<UserCompany> ucOpt = userCompanyService.getUserCompany(request.invitedBy(), request.companyId());
+        if (ucOpt.isEmpty()) {
+            throw new ConflictException("User is not associated with this company");
+        }
+        ValidationUtils.validateUserHasRole(ucOpt.get(), UserCompanyRole.OWNER, UserCompanyRole.ADMIN);
 
         String token = UUID.randomUUID().toString();
 
@@ -60,7 +69,7 @@ public class InvitationService {
         UserInvitation invitation = invitationRepository.findByInvitationToken(request.token())
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
 
-        if (!InvitationStatus.PENDING.equals(invitation.getStatus()) && !InvitationStatus.ACCEPTED.equals(invitation.getStatus())) {
+        if (InvitationStatus.PENDING.equals(invitation.getStatus()) || InvitationStatus.ACCEPTED.equals(invitation.getStatus())) {
             throw new ConflictException("Invitation not valid.");
         }
         if (invitation.getExpiresAt().isBefore(Instant.now())) {
