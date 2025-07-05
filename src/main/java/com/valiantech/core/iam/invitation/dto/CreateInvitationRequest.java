@@ -10,7 +10,7 @@ import java.util.UUID;
 public record CreateInvitationRequest(
         @NotNull UUID companyId,
 
-        @NotBlank UserCompanyRole role,
+        @NotNull UserCompanyRole role,
 
         @NotBlank @Email String invitedEmail,
 
