@@ -66,7 +66,7 @@ public class InvitationService {
         );
 
         // Crea el vínculo usuario-empresa (user_companies)
-        userCompanyService.createLink(
+        userCompanyService.registerUserCompanyByInvitation(
                 userResponse.id(),
                 invitation.getCompanyId(),
                 invitation.getRole(),

@@ -24,11 +24,13 @@ public class UserCompany {
     @Column(nullable = false)
     private UUID companyId;
 
-    private String role;
+    @Enumerated(EnumType.STRING)
+    private UserCompanyRole role;
 
     private UUID invitedBy;
 
-    private String status; // active, invited, blocked, disabled
+    @Enumerated(EnumType.STRING)
+    private UserCompanyStatus status;
 
     private Instant createdAt;
 

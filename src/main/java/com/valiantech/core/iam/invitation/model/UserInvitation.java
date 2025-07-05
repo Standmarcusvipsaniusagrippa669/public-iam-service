@@ -1,5 +1,6 @@
 package com.valiantech.core.iam.invitation.model;
 
+import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,7 +24,8 @@ public class UserInvitation {
     @Column(nullable = false)
     private UUID companyId;
 
-    private String role;
+    @Enumerated(EnumType.STRING)
+    private UserCompanyRole role;
 
     private UUID invitedBy;
 

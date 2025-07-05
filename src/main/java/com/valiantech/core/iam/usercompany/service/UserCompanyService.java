@@ -1,6 +1,8 @@
 package com.valiantech.core.iam.usercompany.service;
 
 import com.valiantech.core.iam.usercompany.model.UserCompany;
+import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
+import com.valiantech.core.iam.usercompany.model.UserCompanyStatus;
 import com.valiantech.core.iam.usercompany.repository.UserCompanyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,7 +16,7 @@ public class UserCompanyService {
 
     private final UserCompanyRepository userCompanyRepository;
 
-    public UserCompany createLink(UUID userId, UUID companyId, String role, UUID invitedBy) {
+    public UserCompany registerUserCompanyByInvitation(UUID userId, UUID companyId, UserCompanyRole role, UUID invitedBy) {
         // Puedes validar unicidad aquí si quieres
         if (userCompanyRepository.findByUserIdAndCompanyId(userId, companyId).isPresent()) {
             throw new RuntimeException("This user is already linked to the company.");
@@ -26,7 +28,7 @@ public class UserCompanyService {
                 .companyId(companyId)
                 .role(role)
                 .invitedBy(invitedBy)
-                .status("active")
+                .status(UserCompanyStatus.ACTIVE)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();

@@ -36,7 +36,8 @@ public class User {
     @Column(name = "must_change_password")
     private Boolean mustChangePassword;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
 
     @Column(name = "last_login_at")
     private Instant lastLoginAt;

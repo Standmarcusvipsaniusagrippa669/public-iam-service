@@ -40,7 +40,8 @@ public class Company {
     @Column(columnDefinition = "text")
     private String logoUrl;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private CompanyStatus status;
 
     private Instant createdAt;
 
