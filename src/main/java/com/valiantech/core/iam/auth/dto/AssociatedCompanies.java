@@ -2,11 +2,10 @@ package com.valiantech.core.iam.auth.dto;
 
 import com.valiantech.core.iam.user.dto.UserResponse;
 
-import java.util.UUID;
+import java.util.List;
 
-public record LoginResponse(
-        String token,
+public record AssociatedCompanies(
         UserResponse user,
-        UUID companyId,
-        String role
+        List<CompanySummary> companies,
+        String loginTicket
 ) {}

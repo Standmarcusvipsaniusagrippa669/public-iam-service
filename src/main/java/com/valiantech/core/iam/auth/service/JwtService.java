@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Date;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -18,11 +19,12 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secret;
 
-    public String generateToken(User user) {
+    public String generateToken(User user, UUID companyId, String role) {
         return Jwts.builder()
                 .setSubject(user.getId().toString())
                 .claim("email", user.getEmail())
-                .claim("status", user.getStatus().toString())
+                .claim("companyId", companyId.toString())
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.DAYS)))
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes()), SignatureAlgorithm.HS256)

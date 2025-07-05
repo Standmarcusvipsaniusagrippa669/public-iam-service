@@ -1,7 +1,9 @@
 package com.valiantech.core.iam.auth.controller;
 
 import com.valiantech.core.iam.auth.dto.LoginRequest;
+import com.valiantech.core.iam.auth.dto.AssociatedCompanies;
 import com.valiantech.core.iam.auth.dto.LoginResponse;
+import com.valiantech.core.iam.auth.dto.TokenRequest;
 import com.valiantech.core.iam.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +20,12 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<AssociatedCompanies> login(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.fetchCompanies(request));
+    }
+
+    @PostMapping("/login-with-company")
+    public ResponseEntity<LoginResponse> loginWithCompany(@RequestBody TokenRequest request) {
+        return ResponseEntity.ok(authService.loginWithCompany(request));
     }
 }
