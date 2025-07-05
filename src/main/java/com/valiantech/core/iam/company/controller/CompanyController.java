@@ -28,9 +28,9 @@ public class CompanyController {
                     @ApiResponse(responseCode = "409", description = "Company with same RUT already exists")
             }
     )
-    @PostMapping
-    public ResponseEntity<CompanyResponse> create(@Valid @RequestBody CreateCompanyRequest request) {
-        return ResponseEntity.ok(companyService.createCompany(request));
+    @PostMapping("/onboarding")
+    public ResponseEntity<CompanyResponse> create(@Valid @RequestBody CompanyOnboardingRequest request) {
+        return ResponseEntity.ok(companyService.onboarding(request));
     }
 
     @Operation(

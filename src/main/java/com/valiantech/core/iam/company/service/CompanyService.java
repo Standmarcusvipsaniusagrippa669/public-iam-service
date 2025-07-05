@@ -6,8 +6,13 @@ import com.valiantech.core.iam.company.model.CompanyStatus;
 import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.ConflictException;
 import com.valiantech.core.iam.exception.NotFoundException;
+import com.valiantech.core.iam.user.dto.UserResponse;
+import com.valiantech.core.iam.user.service.UserService;
+import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
+import com.valiantech.core.iam.usercompany.service.UserCompanyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -18,30 +23,45 @@ import java.util.UUID;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
+    private final UserService userService;
+    private final UserCompanyService userCompanyService;
 
-    public CompanyResponse createCompany(CreateCompanyRequest request) {
-        if (companyRepository.findByRut(request.rut()).isPresent()) {
+    @Transactional
+    public CompanyResponse onboarding(CompanyOnboardingRequest request) {
+        if (companyRepository.findByRut(request.company().rut()).isPresent()) {
             throw new ConflictException("Company with this RUT already exists.");
         }
 
-        Company entity = Company.builder()
+        Company company = Company.builder()
                 .id(UUID.randomUUID())
-                .rut(request.rut())
-                .businessName(request.businessName())
-                .tradeName(request.tradeName())
-                .activity(request.activity())
-                .address(request.address())
-                .commune(request.commune())
-                .region(request.region())
-                .email(request.email())
-                .phone(request.phone())
-                .logoUrl(request.logoUrl())
+                .rut(request.company().rut())
+                .businessName(request.company().businessName())
+                .tradeName(request.company().tradeName())
+                .activity(request.company().activity())
+                .address(request.company().address())
+                .commune(request.company().commune())
+                .region(request.company().region())
+                .email(request.company().email())
+                .phone(request.company().phone())
+                .logoUrl(request.company().logoUrl())
                 .status(CompanyStatus.ACTIVE)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
 
-        return map(companyRepository.save(entity));
+        company = companyRepository.save(company);
+
+
+        // 2. Crear usuario fundador (activo y validado)
+        UserResponse userResponse = userService.registerActiveUser(request.owner());
+        // 3. Crear vínculo OWNER en user_companies
+        userCompanyService.registerOwnerCompany(
+                userResponse.id(),
+                company.getId(),
+                UserCompanyRole.OWNER
+        );
+
+        return map(company);
     }
 
     public CompanyResponse updateCompany(UUID id, UpdateCompanyRequest request) {

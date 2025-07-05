@@ -35,4 +35,19 @@ public class UserCompanyService {
 
         return userCompanyRepository.save(uc);
     }
+
+    public UserCompany registerOwnerCompany(UUID userId, UUID companyId, UserCompanyRole role) {
+        UserCompany uc = UserCompany.builder()
+                .id(UUID.randomUUID())
+                .userId(userId)
+                .companyId(companyId)
+                .role(role)
+                .invitedBy(null)
+                .status(UserCompanyStatus.ACTIVE)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        return userCompanyRepository.save(uc);
+    }
 }
