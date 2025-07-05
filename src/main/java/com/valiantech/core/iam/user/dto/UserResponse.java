@@ -1,5 +1,7 @@
 package com.valiantech.core.iam.user.dto;
 
+import com.valiantech.core.iam.user.model.UserStatus;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -8,7 +10,7 @@ public record UserResponse(
         String fullName,
         String email,
         Boolean emailValidated,
-        String status,
+        UserStatus status,
         Instant lastLoginAt,
         Instant createdAt,
         Instant updatedAt

@@ -4,6 +4,7 @@ import com.valiantech.core.iam.exception.ConflictException;
 import com.valiantech.core.iam.exception.NotFoundException;
 import com.valiantech.core.iam.user.dto.*;
 import com.valiantech.core.iam.user.model.User;
+import com.valiantech.core.iam.user.model.UserStatus;
 import com.valiantech.core.iam.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,12 +23,12 @@ public class UserService {
 
     public UserResponse registerInactiveUser(CreateUserRequest request) {
         checkEmailUnique(request.email());
-        return map(userRepository.save(buildUserEntity(request, "inactive", false)));
+        return map(userRepository.save(buildUserEntity(request, UserStatus.PENDING, false)));
     }
 
     public UserResponse registerValidatedUser(CreateUserRequest request) {
         checkEmailUnique(request.email());
-        return map(userRepository.save(buildUserEntity(request, "active", true)));
+        return map(userRepository.save(buildUserEntity(request, UserStatus.ACTIVE, true)));
     }
 
     public UserResponse updateUser(UUID id, UpdateUserRequest request) {
@@ -47,7 +48,7 @@ public class UserService {
             user.setEmail(request.email());
         }
 
-        if (request.status() != null && !request.status().equals(user.getStatus())) {
+        if (request.status() != null) {
             user.setStatus(request.status());
         }
         if (request.mustChangePassword() != null && !request.mustChangePassword().equals(user.getMustChangePassword())) {
@@ -69,7 +70,7 @@ public class UserService {
                 .stream().map(this::map).toList();
     }
 
-    private User buildUserEntity(CreateUserRequest request, String status, Boolean emailValidated) {
+    private User buildUserEntity(CreateUserRequest request, UserStatus status, Boolean emailValidated) {
         return User.builder()
                 .id(UUID.randomUUID())
                 .fullName(request.fullName())
