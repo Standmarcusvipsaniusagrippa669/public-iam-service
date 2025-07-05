@@ -55,7 +55,7 @@ public class CompanyService {
         // 2. Crear usuario fundador (activo y validado)
         UserResponse userResponse = userService.registerActiveUser(request.owner());
         // 3. Crear vínculo OWNER en user_companies
-        userCompanyService.registerOwnerCompany(
+        userCompanyService.registerUserCompany(
                 userResponse.id(),
                 company.getId(),
                 UserCompanyRole.OWNER
