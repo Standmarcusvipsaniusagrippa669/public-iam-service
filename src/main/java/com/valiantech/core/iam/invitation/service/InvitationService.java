@@ -1,6 +1,7 @@
 package com.valiantech.core.iam.invitation.service;
 
 import com.valiantech.core.iam.invitation.dto.*;
+import com.valiantech.core.iam.invitation.model.InvitationStatus;
 import com.valiantech.core.iam.invitation.model.UserInvitation;
 import com.valiantech.core.iam.invitation.repository.UserInvitationRepository;
 import com.valiantech.core.iam.exception.ConflictException;
@@ -35,7 +36,7 @@ public class InvitationService {
                 .role(request.role())
                 .invitedBy(request.invitedBy())
                 .invitationToken(token)
-                .status("pending")
+                .status(InvitationStatus.PENDING)
                 .registrationUrl("https://auth.valianspa.com/register?token="+token)
                 .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
                 .createdAt(Instant.now())
@@ -49,7 +50,7 @@ public class InvitationService {
         UserInvitation invitation = invitationRepository.findByInvitationToken(request.token())
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
 
-        if (!"pending".equals(invitation.getStatus()) && !"accepted".equals(invitation.getStatus())) {
+        if (!InvitationStatus.PENDING.equals(invitation.getStatus()) && !InvitationStatus.ACCEPTED.equals(invitation.getStatus())) {
             throw new ConflictException("Invitation not valid.");
         }
         if (invitation.getExpiresAt().isBefore(Instant.now())) {
@@ -74,7 +75,7 @@ public class InvitationService {
         );
 
         // Marca la invitación como aceptada
-        invitation.setStatus("accepted");
+        invitation.setStatus(InvitationStatus.ACCEPTED);
         invitation.setAcceptedAt(Instant.now());
         invitation.setUpdatedAt(Instant.now());
         invitationRepository.save(invitation);
@@ -87,7 +88,7 @@ public class InvitationService {
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
 
         // Puedes validar aquí si el estado es válido para registro
-        if ("expired".equals(invitation.getStatus())) {
+        if (InvitationStatus.EXPIRED.equals(invitation.getStatus())) {
             throw new ConflictException("Invitation expired.");
         }
 
@@ -106,8 +107,8 @@ public class InvitationService {
                 i.getRole(),
                 i.getInvitedBy(),
                 i.getInvitationToken(),
-                i.getStatus(),
                 i.getRegistrationUrl(),
+                i.getStatus(),
                 i.getExpiresAt(),
                 i.getAcceptedAt(),
                 i.getCreatedAt(),

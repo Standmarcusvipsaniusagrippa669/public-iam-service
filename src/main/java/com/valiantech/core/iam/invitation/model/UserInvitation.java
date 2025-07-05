@@ -31,7 +31,8 @@ public class UserInvitation {
 
     private String invitationToken;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private InvitationStatus status;
 
     @Column(name = "registration_url", columnDefinition = "text")
     private String registrationUrl;

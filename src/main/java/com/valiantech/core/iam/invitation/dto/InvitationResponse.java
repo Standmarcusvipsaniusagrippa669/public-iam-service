@@ -1,5 +1,6 @@
 package com.valiantech.core.iam.invitation.dto;
 
+import com.valiantech.core.iam.invitation.model.InvitationStatus;
 import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 
 import java.time.Instant;
@@ -13,8 +14,7 @@ public record InvitationResponse(
         UUID invitedBy,
         String invitationToken,
         String registrationUrl,
-
-        String status,
+        InvitationStatus status,
         Instant expiresAt,
         Instant acceptedAt,
         Instant createdAt,
