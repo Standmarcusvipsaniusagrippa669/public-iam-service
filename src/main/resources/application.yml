@@ -21,7 +21,7 @@ spring:
         format_sql: true
 
 jwt:
-  secret: secret
+  secret: ${JWT_SECRET_VALUE}
 
 #  flyway:
 #    enabled: true
