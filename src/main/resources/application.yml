@@ -20,7 +20,8 @@ spring:
       hibernate:
         format_sql: true
 
-
+jwt:
+  secret: secret
 
 #  flyway:
 #    enabled: true
