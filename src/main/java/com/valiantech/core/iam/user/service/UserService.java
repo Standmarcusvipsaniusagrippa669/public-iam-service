@@ -6,6 +6,7 @@ import com.valiantech.core.iam.user.dto.*;
 import com.valiantech.core.iam.user.model.User;
 import com.valiantech.core.iam.user.model.UserStatus;
 import com.valiantech.core.iam.user.repository.UserRepository;
+import com.valiantech.core.iam.usercompany.service.UserCompanyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,19 +21,19 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    public UserResponse registerPendingUser(CreateUserRequest request) {
-        checkEmailUnique(request.email());
-        return map(userRepository.save(buildUserEntity(request, UserStatus.PENDING, false)));
-    }
+    private final UserCompanyService userCompanyService;
 
     public UserResponse registerActiveUser(CreateUserRequest request) {
         checkEmailUnique(request.email());
         return map(userRepository.save(buildUserEntity(request, UserStatus.ACTIVE, true)));
     }
 
-    public UserResponse updateUser(UUID id, UpdateUserRequest request) {
-        User user = userRepository.findById(id)
+    public UserResponse updateUser(UUID userId, UUID companyId, UpdateUserRequest request) {
+        userCompanyService.getUserCompany(userId, companyId).orElseThrow(
+                () -> new ConflictException("Update not allowed")
+        );
+
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (request.fullName() != null && !request.fullName().equals(user.getFullName())) {
@@ -42,7 +43,7 @@ public class UserService {
         if (request.email() != null && !request.email().equals(user.getEmail())) {
             // Verifica que no exista ese email en otro usuario
             userRepository.findByEmail(request.email())
-                    .filter(u -> !u.getId().equals(id))
+                    .filter(u -> !u.getId().equals(userId))
                     .ifPresent(u -> { throw new ConflictException("Email already registered"); });
 
             user.setEmail(request.email());
@@ -65,8 +66,9 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
-    public List<UserResponse> listAll() {
-        return userRepository.findAll()
+    public List<UserResponse> listAll(UUID companyId) {
+        List<UUID> ids = userCompanyService.fetchUsersIdsByCompanyId(companyId);
+        return userRepository.findAllByIdIn(ids)
                 .stream().map(this::map).toList();
     }
 

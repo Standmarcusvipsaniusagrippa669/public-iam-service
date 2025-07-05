@@ -1,14 +1,15 @@
 package com.valiantech.core.iam.user.controller;
 
+import com.valiantech.core.iam.security.SecurityUtil;
 import com.valiantech.core.iam.user.dto.*;
 import com.valiantech.core.iam.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,20 +24,6 @@ public class UserController {
     private final UserService userService;
 
     @Operation(
-            summary = "Create a new user",
-            description = "Creates a new user with full name, email, and password.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "User successfully created"),
-                    @ApiResponse(responseCode = "400", description = "Invalid input data")
-            }
-    )
-    @PostMapping
-    public ResponseEntity<UserResponse> create(
-            @Valid @RequestBody CreateUserRequest request) {
-        return ResponseEntity.ok(userService.registerPendingUser(request));
-    }
-
-    @Operation(
             summary = "Update an existing user",
             description = "Updates the specified fields of an existing user.",
             responses = {
@@ -45,10 +32,12 @@ public class UserController {
             }
     )
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public ResponseEntity<UserResponse> patch(
             @PathVariable UUID id,
             @RequestBody UpdateUserRequest request) {
-        return ResponseEntity.ok(userService.updateUser(id, request));
+        UUID companyId = SecurityUtil.getCompanyIdFromContext();
+        return ResponseEntity.ok(userService.updateUser(id, companyId, request));
     }
 
     @Operation(
@@ -60,6 +49,7 @@ public class UserController {
             }
     )
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','VIEWER')")
     public ResponseEntity<UserResponse> get(
             @Parameter(description = "User unique identifier")
             @PathVariable UUID id) {
@@ -74,7 +64,9 @@ public class UserController {
             }
     )
     @GetMapping
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','VIEWER')")
     public ResponseEntity<List<UserResponse>> list() {
-        return ResponseEntity.ok(userService.listAll());
+        UUID companyId = SecurityUtil.getCompanyIdFromContext();
+        return ResponseEntity.ok(userService.listAll(companyId));
     }
 }
