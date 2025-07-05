@@ -5,6 +5,7 @@ import com.valiantech.core.iam.invitation.service.InvitationService;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class InvitationController {
                     @ApiResponse(responseCode = "200", description = "Invitation created successfully")
             }
     )
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     public ResponseEntity<InvitationResponse> create(@Valid @RequestBody CreateInvitationRequest request) {
         return ResponseEntity.ok(invitationService.create(request));
@@ -64,6 +66,7 @@ public class InvitationController {
                     @ApiResponse(responseCode = "200", description = "List retrieved")
             }
     )
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping
     public ResponseEntity<List<InvitationResponse>> list() {
         return ResponseEntity.ok(invitationService.listAll());
