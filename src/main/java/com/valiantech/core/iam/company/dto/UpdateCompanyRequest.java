@@ -1,5 +1,7 @@
 package com.valiantech.core.iam.company.dto;
 
+import com.valiantech.core.iam.company.model.CompanyStatus;
+
 public record UpdateCompanyRequest(
         String businessName,
         String tradeName,
@@ -10,5 +12,5 @@ public record UpdateCompanyRequest(
         String email,
         String phone,
         String logoUrl,
-        String status
+        CompanyStatus status
 ) {}

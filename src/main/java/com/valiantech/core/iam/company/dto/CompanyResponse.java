@@ -1,5 +1,7 @@
 package com.valiantech.core.iam.company.dto;
 
+import com.valiantech.core.iam.company.model.CompanyStatus;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -15,7 +17,7 @@ public record CompanyResponse(
         String email,
         String phone,
         String logoUrl,
-        String status,
+        CompanyStatus status,
         Instant createdAt,
         Instant updatedAt
 ) {}

@@ -2,6 +2,7 @@ package com.valiantech.core.iam.company.service;
 
 import com.valiantech.core.iam.company.dto.*;
 import com.valiantech.core.iam.company.model.Company;
+import com.valiantech.core.iam.company.model.CompanyStatus;
 import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.ConflictException;
 import com.valiantech.core.iam.exception.NotFoundException;
@@ -35,7 +36,7 @@ public class CompanyService {
                 .email(request.email())
                 .phone(request.phone())
                 .logoUrl(request.logoUrl())
-                .status("active")
+                .status(CompanyStatus.ACTIVE)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
