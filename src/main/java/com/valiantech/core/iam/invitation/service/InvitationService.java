@@ -1,5 +1,7 @@
 package com.valiantech.core.iam.invitation.service;
 
+import com.valiantech.core.iam.company.dto.CompanyResponse;
+import com.valiantech.core.iam.company.service.CompanyService;
 import com.valiantech.core.iam.invitation.dto.*;
 import com.valiantech.core.iam.invitation.model.InvitationStatus;
 import com.valiantech.core.iam.invitation.model.UserInvitation;
@@ -10,6 +12,7 @@ import com.valiantech.core.iam.user.dto.CreateUserRequest;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import com.valiantech.core.iam.user.service.UserService;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
+import com.valiantech.core.iam.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,9 +27,16 @@ public class InvitationService {
 
     private final UserInvitationRepository invitationRepository;
     private final UserService userService;
+    private final CompanyService companyService;
     private final UserCompanyService userCompanyService;
 
     public InvitationResponse create(CreateInvitationRequest request) {
+        UserResponse user = userService.getUser(request.invitedBy());
+        ValidationUtils.validateUserIsActive(user);
+
+        CompanyResponse company = companyService.getCompany(request.companyId());
+        ValidationUtils.validateCompanyIsActive(company);
+
         String token = UUID.randomUUID().toString();
 
         UserInvitation invitation = UserInvitation.builder()
