@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -49,5 +50,9 @@ public class UserCompanyService {
                 .build();
 
         return userCompanyRepository.save(uc);
+    }
+
+    public Optional<UserCompany> getUserCompany(UUID userId, UUID companyId) {
+        return userCompanyRepository.findByUserIdAndCompanyId(userId, companyId);
     }
 }
