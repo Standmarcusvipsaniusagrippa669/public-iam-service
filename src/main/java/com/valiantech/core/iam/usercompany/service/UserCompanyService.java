@@ -19,7 +19,6 @@ public class UserCompanyService {
     private final UserCompanyRepository userCompanyRepository;
 
     public UserCompany registerUserCompanyByInvitation(UUID userId, UUID companyId, UserCompanyRole role, UUID invitedBy) {
-        // Puedes validar unicidad aquí si quieres
         if (userCompanyRepository.findByUserIdAndCompanyId(userId, companyId).isPresent()) {
             throw new RuntimeException("This user is already linked to the company.");
         }
@@ -38,7 +37,10 @@ public class UserCompanyService {
         return userCompanyRepository.save(uc);
     }
 
-    public UserCompany registerOwnerCompany(UUID userId, UUID companyId, UserCompanyRole role) {
+    public UserCompany registerUserCompany(UUID userId, UUID companyId, UserCompanyRole role) {
+        if (userCompanyRepository.findByUserIdAndCompanyId(userId, companyId).isPresent()) {
+            throw new RuntimeException("This user is already linked to the company.");
+        }
         UserCompany uc = UserCompany.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
