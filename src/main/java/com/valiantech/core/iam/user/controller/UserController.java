@@ -33,7 +33,7 @@ public class UserController {
     @PostMapping
     public ResponseEntity<UserResponse> create(
             @Valid @RequestBody CreateUserRequest request) {
-        return ResponseEntity.ok(userService.registerInactiveUser(request));
+        return ResponseEntity.ok(userService.registerPendingUser(request));
     }
 
     @Operation(

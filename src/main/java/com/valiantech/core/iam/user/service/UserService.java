@@ -21,12 +21,12 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserResponse registerInactiveUser(CreateUserRequest request) {
+    public UserResponse registerPendingUser(CreateUserRequest request) {
         checkEmailUnique(request.email());
         return map(userRepository.save(buildUserEntity(request, UserStatus.PENDING, false)));
     }
 
-    public UserResponse registerValidatedUser(CreateUserRequest request) {
+    public UserResponse registerActiveUser(CreateUserRequest request) {
         checkEmailUnique(request.email());
         return map(userRepository.save(buildUserEntity(request, UserStatus.ACTIVE, true)));
     }

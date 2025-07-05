@@ -57,7 +57,7 @@ public class InvitationService {
         }
 
         // Usa UserService para crear el usuario
-        UserResponse userResponse = userService.registerValidatedUser(
+        UserResponse userResponse = userService.registerActiveUser(
                 new CreateUserRequest(
                         request.fullName(),
                         invitation.getInvitedEmail(),
