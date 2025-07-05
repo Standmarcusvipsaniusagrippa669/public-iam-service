@@ -10,14 +10,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -61,12 +63,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         User user = userOpt.get();
 
+        String role = claims.get("role", String.class);
+        String companyId = claims.get("companyId", String.class);
+
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
         // Puedes añadir roles y authorities aquí si lo requieres
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        user, null, /* authorities: */ null);
+                        user, null, authorities);
 
-        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        // Extrae detalles estándar
+        WebAuthenticationDetails standardDetails =
+                new WebAuthenticationDetailsSource().buildDetails(request);
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("companyId", companyId);
+        details.put("role", role);
+        details.put("ipAddress", standardDetails.getRemoteAddress());
+        details.put("sessionId", standardDetails.getSessionId());
+
+        authentication.setDetails(details);
 
         // Asigna el usuario autenticado al contexto de seguridad
         SecurityContextHolder.getContext().setAuthentication(authentication);
