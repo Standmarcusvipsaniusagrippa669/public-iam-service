@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Component
@@ -29,9 +30,10 @@ public class RateLimitFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         String path = req.getRequestURI();
         String remoteIp = req.getRemoteAddr();
+        String userId = extractUserIdFromJwt(req); // Implementa esto según tu filtro JWT
 
-        // Excluye rutas de swagger y recursos estáticos
-        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-resources") ||
+        // Excluye rutas y recursos estáticos
+        if (path.startsWith("/api/v1/auth") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-resources") ||
                 path.endsWith(".css") || path.endsWith(".js") || path.endsWith(".ico") || path.endsWith(".png") || path.endsWith(".map")) {
             chain.doFilter(request, response);
             return;
@@ -40,44 +42,10 @@ public class RateLimitFilter implements Filter {
         // Normaliza IPs por si vienen con espacios/etc.
         boolean isWhite = whitelist.stream().map(String::trim).anyMatch(ip -> ip.equals(remoteIp));
 
-        String key;
-        long capacity;
-        long refill;
-        Duration period;
-
-        // Endpoints públicos de auth
-        if (path.startsWith("/api/v1/auth")) {
-            if (isWhite) {
-                capacity = 100; // Por ejemplo, 100 req/min para whitelist
-                refill = 100;
-                period = Duration.ofMinutes(1);
-            } else {
-                capacity = 5;
-                refill = 5;
-                period = Duration.ofMinutes(1);
-            }
-            key = "ip:" + remoteIp;
-        } else {
-            // Endpoints autenticados: usa userId del JWT
-            String userId = extractUserIdFromJwt(req); // Implementa esto según tu filtro JWT
-            if (userId == null) {
-                // Si no autenticado, trata como IP
-                key = "ip:" + remoteIp;
-                capacity = 5;
-                refill = 5;
-                period = Duration.ofMinutes(1);
-            } else if (isWhite) {
-                key = "user:" + userId;
-                capacity = 200;
-                refill = 200;
-                period = Duration.ofMinutes(1);
-            } else {
-                key = "user:" + userId;
-                capacity = 20;
-                refill = 20;
-                period = Duration.ofMinutes(1);
-            }
-        }
+        String key = Objects.isNull(userId) ? "ip:" + remoteIp : "user:" + userId;
+        long capacity = isWhite ? 100 : 10; // 100 or 10 req/min
+        long refill = isWhite ? 100 : 10;
+        Duration period = Duration.ofMinutes(1);
 
         var bucket = rateLimiter.resolveBucket(key, capacity, refill, period);
         if (bucket.tryConsume(1)) {
