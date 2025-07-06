@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -88,10 +87,6 @@ public class CompanyService {
         Company entity = companyRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Company not found."));
         return map(entity);
-    }
-
-    public List<CompanyResponse> listCompanies() {
-        return companyRepository.findAll().stream().map(this::map).toList();
     }
 
     private CompanyResponse map(Company c) {
