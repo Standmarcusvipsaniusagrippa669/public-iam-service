@@ -2,6 +2,7 @@ package com.valiantech.core.iam.invitation.controller;
 
 import com.valiantech.core.iam.invitation.dto.*;
 import com.valiantech.core.iam.invitation.service.InvitationService;
+import com.valiantech.core.iam.ratelimit.RateLimit;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,14 +24,15 @@ public class InvitationController {
 
     private final InvitationService invitationService;
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Create a new invitation",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Invitation created successfully")
             }
     )
-    @SecurityRequirement(name = "bearerAuth")
     @PostMapping
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public ResponseEntity<InvitationResponse> create(@Valid @RequestBody CreateInvitationRequest request) {
         return ResponseEntity.ok(invitationService.create(request));
     }
@@ -43,11 +46,12 @@ public class InvitationController {
             }
     )
     @PostMapping("/accept-and-register")
+    @RateLimit(capacity = 10, refill = 10)
     public ResponseEntity<UserResponse> accept(@Valid @RequestBody AcceptAndRegisterRequest request) {
         return ResponseEntity.ok(invitationService.acceptAndRegister(request));
     }
 
-    @GetMapping("/{token}")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Get invitation details by token",
             description = "Returns the invitation details for a given invitation token.",
@@ -56,18 +60,21 @@ public class InvitationController {
                     @ApiResponse(responseCode = "404", description = "Invitation not found")
             }
     )
+    @GetMapping("/{token}")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public ResponseEntity<InvitationResponse> getByToken(@PathVariable String token) {
         return ResponseEntity.ok(invitationService.getByToken(token));
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "List all invitations",
             responses = {
                     @ApiResponse(responseCode = "200", description = "List retrieved")
             }
     )
-    @SecurityRequirement(name = "bearerAuth")
     @GetMapping
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public ResponseEntity<List<InvitationResponse>> list() {
         return ResponseEntity.ok(invitationService.listAll());
     }
