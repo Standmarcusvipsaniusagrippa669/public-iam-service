@@ -31,6 +31,13 @@ server:
     session:
       timeout: 30m             # Timeout de sesión, no tan relevante si eres stateless
 
+redis:
+  host: localhost
+  port: 6379
+  password: redispass
+  isCluster: false
+  clusters:
+    nodes: [ ]
 
 #  flyway:
 #    enabled: true

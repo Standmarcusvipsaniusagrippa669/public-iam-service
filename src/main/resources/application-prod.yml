@@ -31,6 +31,15 @@ server:
     session:
       timeout: 30m             # Timeout de sesión, no tan relevante si eres stateless
 
+redis:
+  host: ${REDIS_HOST}              # Solo usado en modo standalone
+  port: ${REDIS_PORT}                   # Usado en standalone y como valor por defecto si el nodo del cluster no tiene puerto
+  password: ${REDIS_PASSWORD}                 # Deja en blanco si tu Redis no tiene password
+  isCluster: ${REDIS_IS_CLUSTER}              # true para cluster, false para standalone
+  clusters:
+    nodes:
+      - ${REDIS_NODE_ONE} # 192.168.1.10:7000
+      - ${REDIS_NODE_TWO}
 
 #  flyway:
 #    enabled: true
