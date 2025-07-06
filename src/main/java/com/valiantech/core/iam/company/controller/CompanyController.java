@@ -2,15 +2,16 @@ package com.valiantech.core.iam.company.controller;
 
 import com.valiantech.core.iam.company.dto.*;
 import com.valiantech.core.iam.company.service.CompanyService;
+import com.valiantech.core.iam.security.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -41,6 +42,7 @@ public class CompanyController {
             }
     )
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public ResponseEntity<CompanyResponse> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateCompanyRequest request) {
@@ -48,25 +50,16 @@ public class CompanyController {
     }
 
     @Operation(
-            summary = "Get a company by ID",
+            summary = "Obtener los datos de mi empresa (según el contexto del token)",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Company found"),
-                    @ApiResponse(responseCode = "404", description = "Company not found")
+                    @ApiResponse(responseCode = "200", description = "Empresa encontrada"),
+                    @ApiResponse(responseCode = "404", description = "Empresa no encontrada o no tienes acceso")
             }
     )
-    @GetMapping("/{id}")
-    public ResponseEntity<CompanyResponse> get(@PathVariable UUID id) {
-        return ResponseEntity.ok(companyService.getCompany(id));
-    }
-
-    @Operation(
-            summary = "List all companies",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "List retrieved")
-            }
-    )
-    @GetMapping
-    public ResponseEntity<List<CompanyResponse>> list() {
-        return ResponseEntity.ok(companyService.listCompanies());
+    @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','VIEWER')")
+    public ResponseEntity<CompanyResponse> getMyCompany() {
+        UUID companyId = SecurityUtil.getCompanyIdFromContext(); // Implementa este util para extraerlo del JWT
+        return ResponseEntity.ok(companyService.getCompany(companyId));
     }
 }
