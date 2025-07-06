@@ -33,7 +33,7 @@ public class RateLimitFilter implements Filter {
         String userId = extractUserIdFromJwt(req); // Implementa esto según tu filtro JWT
 
         // Excluye rutas y recursos estáticos
-        if (path.startsWith("/api/v1/auth") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-resources") ||
+        if (path.contains("/actuator") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-resources") ||
                 path.endsWith(".css") || path.endsWith(".js") || path.endsWith(".ico") || path.endsWith(".png") || path.endsWith(".map")) {
             chain.doFilter(request, response);
             return;
