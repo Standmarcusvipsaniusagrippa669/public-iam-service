@@ -17,6 +17,35 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Servicio para la gestión de empresas (compañías) en el sistema IAM.
+ *
+ * <p>
+ * Implementa la lógica de negocio para el proceso de onboarding (registro), actualización y obtención de datos
+ * de una compañía. Se encarga de validar unicidad de RUT, coordinar la creación de usuarios founder (owner)
+ * y establecer la relación OWNER en la tabla de vínculo usuario-empresa.
+ * </p>
+ *
+ * <h3>Responsabilidades principales:</h3>
+ * <ul>
+ *   <li>Registrar una nueva empresa y su usuario owner mediante onboarding.</li>
+ *   <li>Actualizar los datos de la empresa a partir de un request de modificación.</li>
+ *   <li>Obtener la información detallada de una empresa por ID.</li>
+ *   <li>Validar unicidad de RUT para evitar duplicidades.</li>
+ *   <li>Coordinar la creación y vinculación de usuario founder y roles iniciales.</li>
+ * </ul>
+ *
+ * <b>Notas:</b>
+ * <ul>
+ *   <li>El onboarding es transaccional: se crean la empresa, el usuario owner y su vínculo OWNER atómicamente.</li>
+ *   <li>El método {@link #updateCompany(UUID, UpdateCompanyRequest)} solo actualiza campos no nulos en el request.</li>
+ *   <li>Se lanza {@link ConflictException} si el RUT ya existe, y {@link NotFoundException} si no se encuentra la empresa.</li>
+ * </ul>
+ *
+ * @author Ian Cardenas
+ * @since 1.0
+ */
+
 @Service
 @RequiredArgsConstructor
 public class CompanyService {
@@ -25,6 +54,14 @@ public class CompanyService {
     private final UserService userService;
     private final UserCompanyService userCompanyService;
 
+    /**
+     * Registra una nueva empresa y su usuario owner (onboarding).
+     * Crea la compañía, el usuario founder y la relación OWNER en user_companies de manera atómica.
+     *
+     * @param request Request con datos de la empresa y del usuario owner.
+     * @return Datos de la empresa registrada.
+     * @throws ConflictException Si ya existe una empresa con el mismo RUT.
+     */
     @Transactional
     public CompanyResponse onboarding(CompanyOnboardingRequest request) {
         if (companyRepository.findByRut(request.company().rut()).isPresent()) {
@@ -63,6 +100,14 @@ public class CompanyService {
         return map(company);
     }
 
+    /**
+     * Actualiza los datos de la empresa indicada, modificando solo los campos no nulos del request.
+     *
+     * @param id      ID de la empresa a actualizar.
+     * @param request Request con los campos a modificar.
+     * @return Empresa actualizada.
+     * @throws NotFoundException Si la empresa no existe.
+     */
     public CompanyResponse updateCompany(UUID id, UpdateCompanyRequest request) {
         Company entity = companyRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Company not found."));
@@ -83,12 +128,25 @@ public class CompanyService {
         return map(companyRepository.save(entity));
     }
 
+    /**
+     * Obtiene los datos detallados de una empresa por su ID.
+     *
+     * @param id ID de la empresa.
+     * @return Datos de la empresa.
+     * @throws NotFoundException Si la empresa no existe.
+     */
     public CompanyResponse getCompany(UUID id) {
         Company entity = companyRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Company not found."));
         return map(entity);
     }
 
+    /**
+     * Transforma la entidad Company a DTO de respuesta.
+     *
+     * @param c Entidad Company.
+     * @return DTO de respuesta para la empresa.
+     */
     private CompanyResponse map(Company c) {
         return new CompanyResponse(
                 c.getId(),
