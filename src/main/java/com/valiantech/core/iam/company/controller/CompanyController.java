@@ -35,18 +35,17 @@ public class CompanyController {
     }
 
     @Operation(
-            summary = "Update an existing company",
+            summary = "Actualizar mi empresa (según el contexto del token)",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Company updated"),
-                    @ApiResponse(responseCode = "404", description = "Company not found")
+                    @ApiResponse(responseCode = "200", description = "Empresa actualizada"),
+                    @ApiResponse(responseCode = "404", description = "Empresa no encontrada")
             }
     )
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
-    public ResponseEntity<CompanyResponse> update(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateCompanyRequest request) {
-        return ResponseEntity.ok(companyService.updateCompany(id, request));
+    @PutMapping("/me")
+    @PreAuthorize("hasAnyRole('OWNER')")
+    public ResponseEntity<CompanyResponse> updateMyCompany(@Valid @RequestBody UpdateCompanyRequest request) {
+        UUID companyId = SecurityUtil.getCompanyIdFromContext(); // Extrae el companyId del JWT/contexto
+        return ResponseEntity.ok(companyService.updateCompany(companyId, request));
     }
 
     @Operation(
