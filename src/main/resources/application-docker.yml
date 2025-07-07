@@ -48,3 +48,7 @@ redis:
   isCluster: ${REDIS_IS_CLUSTER}
   clusters:
     nodes: [ ]
+
+valiantech:
+  invitation:
+    registration-url-base: ${REGISTRATION_URL_BASE}

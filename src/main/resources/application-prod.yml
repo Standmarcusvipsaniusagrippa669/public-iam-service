@@ -50,3 +50,7 @@ redis:
     nodes:
       - ${REDIS_NODE_ONE} # 192.168.1.10:7000
       - ${REDIS_NODE_TWO}
+
+valiantech:
+  invitation:
+    registration-url-base: ${REGISTRATION_URL_BASE}
