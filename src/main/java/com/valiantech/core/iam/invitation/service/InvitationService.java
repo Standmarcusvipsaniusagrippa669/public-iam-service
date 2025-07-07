@@ -2,6 +2,7 @@ package com.valiantech.core.iam.invitation.service;
 
 import com.valiantech.core.iam.company.dto.CompanyResponse;
 import com.valiantech.core.iam.company.service.CompanyService;
+import com.valiantech.core.iam.config.InvitationProperties;
 import com.valiantech.core.iam.invitation.dto.*;
 import com.valiantech.core.iam.invitation.model.InvitationStatus;
 import com.valiantech.core.iam.invitation.model.UserInvitation;
@@ -33,6 +34,8 @@ public class InvitationService {
     private final CompanyService companyService;
     private final UserCompanyService userCompanyService;
 
+    private final InvitationProperties invitationProperties;
+
     public InvitationResponse create(CreateInvitationRequest request) {
         UserResponse user = userService.getUser(request.invitedBy());
         ValidationUtils.validateUserIsActive(user);
@@ -56,8 +59,8 @@ public class InvitationService {
                 .invitedBy(request.invitedBy())
                 .invitationToken(token)
                 .status(InvitationStatus.PENDING)
-                .registrationUrl("https://auth.valianspa.com/register?token="+token)
-                .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
+                .registrationUrl(invitationProperties.getRegistrationUrlBase().concat(token))
+                .expiresAt(Instant.now().plus(invitationProperties.getTokenExpiryDays(), ChronoUnit.DAYS))
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
