@@ -22,6 +22,34 @@ import java.util.List;
 import java.util.UUID;
 import java.time.temporal.ChronoUnit;
 
+/**
+ * Servicio encargado de la autenticación de usuarios y el manejo del flujo de login multiempresa.
+ *
+ * <p>
+ * Gestiona la validación de credenciales, la obtención de compañías asociadas a un usuario,
+ * la emisión de tickets temporales para login seguro y la generación de JWTs con contexto de empresa y rol.
+ * Implementa el flujo de autenticación en dos pasos para ambientes multi-tenant.
+ * </p>
+ *
+ * <h3>Responsabilidades principales:</h3>
+ * <ul>
+ *     <li>Validar credenciales y estado del usuario.</li>
+ *     <li>Emitir un ticket de login de un solo uso y expiración corta.</li>
+ *     <li>Listar empresas asociadas al usuario, junto con el rol en cada una.</li>
+ *     <li>Verificar el ticket y credenciales para emitir el JWT final.</li>
+ *     <li>Prevenir ataques de fuerza bruta y asegurar el flujo seguro de login.</li>
+ * </ul>
+ *
+ * <b>Notas:</b>
+ * <ul>
+ *     <li>El ticket de login solo puede usarse una vez y expira en 5 minutos.</li>
+ *     <li>El JWT generado incluye el companyId y rol actual para operaciones multiempresa seguras.</li>
+ *     <li>Lanza {@link UnauthorizedException} para todos los errores de autenticación y acceso.</li>
+ * </ul>
+ *
+ * @author Ian Cardenas
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -34,6 +62,13 @@ public class AuthService {
     private final CompanyRepository companyRepository;
     private final LoginTicketRepository loginTicketRepository;
 
+    /**
+     * Valida las credenciales y retorna las compañías activas asociadas al usuario, junto con un ticket temporal de login.
+     *
+     * @param request LoginRequest con email y contraseña del usuario.
+     * @return Un objeto con el usuario autenticado, sus empresas y el loginTicket temporal.
+     * @throws UnauthorizedException Si las credenciales son incorrectas o el usuario no está activo.
+     */
     public AssociatedCompanies fetchCompanies(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS));
@@ -71,6 +106,13 @@ public class AuthService {
         return new AssociatedCompanies(UserResponse.from(user), summaries, loginTicket);
     }
 
+    /**
+     * Realiza el login en el contexto de una empresa específica, validando el ticket y emitiendo el JWT de acceso.
+     *
+     * @param request TokenRequest con loginTicket, email y companyId seleccionados.
+     * @return Respuesta con el JWT de acceso, datos del usuario, empresa y rol.
+     * @throws UnauthorizedException Si el ticket es inválido, expirado, ya usado o la afiliación no es válida.
+     */
     public LoginResponse loginWithCompany(TokenRequest request) {
         LoginTicket ticket = loginTicketRepository.findById(request.loginTicket())
                 .orElseThrow(() -> new UnauthorizedException("Invalid login ticket"));

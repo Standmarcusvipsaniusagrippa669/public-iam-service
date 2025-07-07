@@ -13,12 +13,46 @@ import java.util.Date;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+/**
+ * Servicio encargado de la generación y validación de tokens JWT para autenticación y autorización en la aplicación.
+ *
+ * <p>
+ * Los tokens generados incluyen información del usuario, la empresa seleccionada (companyId) y el rol actual,
+ * permitiendo un control granular y seguro sobre los recursos en ambientes multiempresa.
+ * </p>
+ *
+ * <b>Notas de seguridad:</b>
+ * <ul>
+ *   <li>La clave secreta para firmar los JWT se obtiene desde la propiedad {@code jwt.secret}.</li>
+ *   <li>El token tiene una expiración de 24 horas desde su emisión.</li>
+ *   <li>El algoritmo de firma utilizado es HS256.</li>
+ * </ul>
+ *
+ * <h3>Claims incluidos en el JWT:</h3>
+ * <ul>
+ *   <li><b>sub:</b> ID del usuario autenticado</li>
+ *   <li><b>email:</b> Email del usuario</li>
+ *   <li><b>companyId:</b> Empresa en contexto</li>
+ *   <li><b>role:</b> Rol del usuario en esa empresa</li>
+ * </ul>
+ *
+ * @author Ian Cardenas
+ * @since 1.0
+ */
 @Service
 public class JwtService {
 
     @Value("${jwt.secret}")
     private String secret;
 
+    /**
+     * Genera un JWT firmado para el usuario, empresa y rol indicados.
+     *
+     * @param user      Usuario autenticado
+     * @param companyId Empresa seleccionada
+     * @param role      Rol del usuario en la empresa
+     * @return Token JWT firmado con los claims requeridos
+     */
     public String generateToken(User user, UUID companyId, String role) {
         return Jwts.builder()
                 .setSubject(user.getId().toString())
@@ -31,6 +65,13 @@ public class JwtService {
                 .compact();
     }
 
+    /**
+     * Parsea y valida un token JWT, devolviendo los claims incluidos.
+     *
+     * @param token Token JWT firmado
+     * @return Claims (reclamos) incluidos en el JWT
+     * @throws io.jsonwebtoken.JwtException Si el token es inválido o está expirado
+     */
     public Claims parseToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
