@@ -25,6 +25,7 @@ public class UserController {
 
     private final UserService userService;
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Update an existing user",
             description = "Updates the specified fields of an existing user.",
@@ -42,6 +43,7 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, companyId, request));
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Get user by ID",
             description = "Retrieves the user details for the given ID.",
@@ -59,6 +61,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserByCompanyId(id, companyId));
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "List all users",
             description = "Returns a list of all users in the system.",

@@ -5,6 +5,7 @@ import com.valiantech.core.iam.company.service.CompanyService;
 import com.valiantech.core.iam.security.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class CompanyController {
 
     private final CompanyService companyService;
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Create a new company",
             responses = {
@@ -34,6 +36,7 @@ public class CompanyController {
         return ResponseEntity.ok(companyService.onboarding(request));
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Actualizar mi empresa (según el contexto del token)",
             responses = {
@@ -48,6 +51,7 @@ public class CompanyController {
         return ResponseEntity.ok(companyService.updateCompany(companyId, request));
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Obtener los datos de mi empresa (según el contexto del token)",
             responses = {
