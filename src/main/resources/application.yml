@@ -52,3 +52,5 @@ redis:
 valiantech:
   invitation:
     registration-url-base: http://localhost/register
+    token-expiry-days: 7
+    enable-invite: true
