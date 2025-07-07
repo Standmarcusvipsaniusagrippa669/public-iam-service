@@ -55,7 +55,8 @@ public class UserController {
     public ResponseEntity<UserResponse> get(
             @Parameter(description = "User unique identifier")
             @PathVariable UUID id) {
-        return ResponseEntity.ok(userService.getUser(id));
+        UUID companyId = SecurityUtil.getCompanyIdFromContext();
+        return ResponseEntity.ok(userService.getUserByCompanyId(id, companyId));
     }
 
     @Operation(
