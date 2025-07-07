@@ -2,10 +2,12 @@ package com.valiantech.core.iam.user.service;
 
 import com.valiantech.core.iam.exception.ConflictException;
 import com.valiantech.core.iam.exception.NotFoundException;
+import com.valiantech.core.iam.exception.UnauthorizedException;
 import com.valiantech.core.iam.user.dto.*;
 import com.valiantech.core.iam.user.model.User;
 import com.valiantech.core.iam.user.model.UserStatus;
 import com.valiantech.core.iam.user.repository.UserRepository;
+import com.valiantech.core.iam.usercompany.model.UserCompany;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String USER_NOT_FOUND = "User not found";
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserCompanyService userCompanyService;
@@ -29,12 +32,12 @@ public class UserService {
     }
 
     public UserResponse updateUser(UUID userId, UUID companyId, UpdateUserRequest request) {
-        userCompanyService.getUserCompany(userId, companyId).orElseThrow(
-                () -> new ConflictException("Update not allowed")
+        UserCompany userCompany = userCompanyService.getUserCompany(userId, companyId).orElseThrow(
+                () -> new UnauthorizedException("Update not allowed")
         );
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        User user = userRepository.findById(userCompany.getUserId())
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
 
         if (request.fullName() != null && !request.fullName().equals(user.getFullName())) {
             user.setFullName(request.fullName());
@@ -63,7 +66,16 @@ public class UserService {
     public UserResponse getUser(UUID id) {
         return userRepository.findById(id)
                 .map(this::map)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
+    }
+
+    public UserResponse getUserByCompanyId(UUID userId, UUID companyId) {
+        UserCompany userCompany = userCompanyService.getUserCompany(userId, companyId).orElseThrow(
+                () -> new UnauthorizedException("Get not allowed")
+        );
+        return userRepository.findById(userCompany.getUserId())
+                .map(this::map)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
     }
 
     public List<UserResponse> listAll(UUID companyId) {
