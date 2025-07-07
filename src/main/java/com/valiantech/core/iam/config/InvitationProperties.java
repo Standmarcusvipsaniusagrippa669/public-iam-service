@@ -10,5 +10,4 @@ import org.springframework.context.annotation.Configuration;
 public class InvitationProperties {
     private String registrationUrlBase;
     private Integer tokenExpiryDays = 7;
-    private Boolean enableInvite = false;
 }

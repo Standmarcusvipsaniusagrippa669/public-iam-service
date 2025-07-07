@@ -55,4 +55,3 @@ valiantech:
   invitation:
     registration-url-base: ${INVITATION_REGISTRATION_URL_BASE}
     token-expiry-days: ${INVITATION_TOKEN_EXPIRY_DAYS}
-    enable-invite: ${INVITATION_ENABLED}
