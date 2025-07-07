@@ -26,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final String INVALID_CREDENTIALS = "Invalid credentials";
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -35,10 +36,10 @@ public class AuthService {
 
     public AssociatedCompanies fetchCompanies(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new UnauthorizedException("Invalid credentials");
+            throw new UnauthorizedException(INVALID_CREDENTIALS);
         }
         if (!user.getStatus().equals(UserStatus.ACTIVE)) {
             throw new UnauthorizedException("User is not active");
@@ -82,7 +83,7 @@ public class AuthService {
         }
 
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS));
 
         UserCompany userCompany = userCompanyRepository.findByUserIdAndCompanyId(user.getId(), request.companyId())
                 .orElseThrow(() -> new UnauthorizedException("Not affiliated to this company"));
