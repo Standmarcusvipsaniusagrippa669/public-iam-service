@@ -77,13 +77,18 @@ public class AuthService {
      * @throws UnauthorizedException Si las credenciales son incorrectas o el usuario no está activo.
      */
     public AssociatedCompanies fetchCompanies(LoginRequest request) {
+        log.debug("Starting fetchCompanies with email={}", request.email());
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS));
+        log.debug("User found with email={}", request.email());
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            log.warn("User password not match for email={}", request.email());
             throw new UnauthorizedException(INVALID_CREDENTIALS);
         }
+
         if (!user.getStatus().equals(UserStatus.ACTIVE)) {
+            log.warn("User not active for email={}", request.email());
             throw new UnauthorizedException("User is not active");
         }
 
@@ -96,8 +101,10 @@ public class AuthService {
                 .used(false)
                 .build();
         loginTicketRepository.save(ticket);
+        log.debug("Login ticket saved for email={}", request.email());
 
         List<UserCompany> companies = userCompanyRepository.findByUserId(user.getId());
+        log.debug("Companies found for email={}: {}", request.email(), companies.size());
         List<CompanySummary> summaries = companies.stream()
                 .filter(uc -> uc.getStatus().equals(UserCompanyStatus.ACTIVE))
                 .map(uc -> {
@@ -109,7 +116,7 @@ public class AuthService {
                     );
                 })
                 .toList();
-
+        log.info("Login successful for email {}", request.email());
         return new AssociatedCompanies(UserResponse.from(user), summaries, loginTicket);
     }
 
@@ -122,39 +129,50 @@ public class AuthService {
      */
     @Transactional
     public LoginResponse loginWithCompany(TokenRequest request) {
+        log.debug("Starting loginWithCompany with email={} and companyId={}", request.email(), request.companyId());
         LoginTicket ticket = loginTicketRepository.findById(request.loginTicket())
                 .orElseThrow(() -> new UnauthorizedException("Invalid login ticket"));
+        log.debug("Login ticket found with used={} and expiresAt={}", ticket.isUsed(), ticket.getExpiresAt());
 
         if (ticket.isUsed() || ticket.getExpiresAt().isBefore(Instant.now())) {
+            log.warn("Login ticket expired or already used: {}", request.loginTicket());
             throw new UnauthorizedException("Ticket expired or already used");
         }
         if (!ticket.getEmail().equalsIgnoreCase(request.email())) {
+            log.warn("Login ticket does not match user: {}", request.loginTicket());
             throw new UnauthorizedException("Ticket does not match user");
         }
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS));
+        log.debug("User found for email={}", request.email());
 
         UserCompany userCompany = userCompanyRepository.findByUserIdAndCompanyId(user.getId(), request.companyId())
                 .orElseThrow(() -> new UnauthorizedException("Not affiliated to this company"));
+        log.debug("User found for email={} and company={}", request.email(), request.companyId());
 
         if (!userCompany.getStatus().equals(UserCompanyStatus.ACTIVE)) {
+            log.warn("User not active in this company: {}", request.email());
             throw new UnauthorizedException("Not active in this company");
         }
 
         String role = userCompany.getRole().name();
 
         String authToken = jwtService.generateToken(user, request.companyId(), role);
+        log.debug("Auth token generate for email={}", request.email());
 
         // Genera el refresh token como UUID string
         String refreshTokenPlain = UUID.randomUUID().toString();
-
         saveRefreshToken(request.companyId(), refreshTokenPlain, user);
+        log.debug("Refresh token generate for email={}", request.email());
 
         // Invalida el ticket
         ticket.setUsed(true);
         loginTicketRepository.save(ticket);
+        log.debug("Login ticket set used for email={}", request.email());
 
+
+        log.info("Login successful for user {} in company {}", request.email(), request.companyId());
         return new LoginResponse(authToken, refreshTokenPlain, UserResponse.from(user), request.companyId(), role);
     }
 
@@ -173,39 +191,49 @@ public class AuthService {
      */
     @Transactional
     public RefreshTokenResponse refreshAuthToken(RefreshTokenRequest request) {
+        log.debug("Starting refreshAuthToken for refreshToken={}", request.refreshToken());
         String refreshTokenPlain = request.refreshToken();
         String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
 
         // Buscar refresh token en BD
         RefreshToken tokenEntity = refreshTokenRepository.findByTokenHash(refreshTokenHash)
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+        log.debug("Refresh token found for refreshToken={}", request.refreshToken());
+
         // Validar estado y expiración
         if (tokenEntity.isRevoked() || tokenEntity.getExpiresAt().isBefore(Instant.now())) {
+            log.warn("Refresh token expired or revoked for refreshToken={}", request.refreshToken());
             throw new UnauthorizedException("Refresh token expired or revoked");
         }
 
         // Obtener usuario y empresa para generar nuevo JWT
         User user = userRepository.findById(tokenEntity.getUserId())
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token or user"));
+        log.debug("User found for refreshToken={}", request.refreshToken());
 
         UserCompany userCompany = userCompanyRepository.findByUserIdAndCompanyId(user.getId(), tokenEntity.getCompanyId())
                 .orElseThrow(() -> new UnauthorizedException("Not affiliated to this company"));
-        log.info("userCompany {}", userCompany);
+        log.debug("User found in company");
         if (!userCompany.getStatus().equals(UserCompanyStatus.ACTIVE)) {
+            log.warn("User not active in this company for refreshToken={}", request.refreshToken());
             throw new UnauthorizedException("Not active in this company");
         }
 
         String role = userCompany.getRole().name();
         // Generar nuevo auth token (JWT)
         String newAuthToken = jwtService.generateToken(user, tokenEntity.getCompanyId(), role);
+        log.debug("New auth token generate for refreshToken={}", request.refreshToken());
 
         // Rotación de refresh tokens: revocar el antiguo y generar uno nuevo
         tokenEntity.setRevoked(true);
         refreshTokenRepository.save(tokenEntity);
+        log.debug("Revoked previously refresh token for refreshToken={}", request.refreshToken());
+
 
         String newRefreshTokenPlain = UUID.randomUUID().toString();
         saveRefreshToken(tokenEntity.getCompanyId(), newRefreshTokenPlain, user);
 
+        log.info("Success refresh token for refreshToken {}", request.refreshToken());
         return new RefreshTokenResponse(newAuthToken, newRefreshTokenPlain);
     }
 
