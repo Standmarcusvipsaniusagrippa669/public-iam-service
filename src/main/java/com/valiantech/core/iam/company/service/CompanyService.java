@@ -11,6 +11,7 @@ import com.valiantech.core.iam.user.service.UserService;
 import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +49,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
@@ -64,7 +66,9 @@ public class CompanyService {
      */
     @Transactional
     public CompanyResponse onboarding(CompanyOnboardingRequest request) {
+        log.debug("Starting onboarding for company with rut={}", request.company().rut());
         if (companyRepository.findByRut(request.company().rut()).isPresent()) {
+            log.warn("Company with rut={} already exists", request.company().rut());
             throw new ConflictException("Company with this RUT already exists.");
         }
 
@@ -86,17 +90,19 @@ public class CompanyService {
                 .build();
 
         company = companyRepository.save(company);
-
+        log.debug("Company successfully saved");
 
         // 2. Crear usuario fundador (activo y validado)
         UserResponse userResponse = userService.registerActiveUser(request.owner());
+        log.debug("User owner for company rut={} created", request.company().rut());
         // 3. Crear vínculo OWNER en user_companies
         userCompanyService.registerUserCompany(
                 userResponse.id(),
                 company.getId(),
                 UserCompanyRole.OWNER
         );
-
+        log.debug("User owner associated to company with rut={}", request.company().rut());
+        log.info("Onboarding of company rut {} end successfully", request.company().rut());
         return map(company);
     }
 
@@ -109,6 +115,7 @@ public class CompanyService {
      * @throws NotFoundException Si la empresa no existe.
      */
     public CompanyResponse updateCompany(UUID id, UpdateCompanyRequest request) {
+        log.debug("Starting updateCompany for id={}", id);
         Company entity = companyRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Company not found."));
 
@@ -124,7 +131,7 @@ public class CompanyService {
         if (request.status() != null) entity.setStatus(request.status());
 
         entity.setUpdatedAt(Instant.now());
-
+        log.info("Successfully update company with id {}", id);
         return map(companyRepository.save(entity));
     }
 
