@@ -17,6 +17,7 @@ import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
 import com.valiantech.core.iam.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -27,6 +28,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class InvitationService {
 
     private final UserInvitationRepository invitationRepository;
@@ -37,17 +39,22 @@ public class InvitationService {
     private final InvitationProperties invitationProperties;
 
     public InvitationResponse create(UUID companyId, CreateInvitationRequest request) {
+        log.debug("Starting create invitation for invitedEmail={}", request.invitedEmail());
         UserResponse user = userService.getUser(request.invitedBy());
         ValidationUtils.validateUserIsActive(user);
+        log.debug("User manager found and is active for invitedEmail={}", request.invitedEmail());
 
         CompanyResponse company = companyService.getCompany(companyId);
         ValidationUtils.validateCompanyIsActive(company);
+        log.debug("Company associated founded and is active for invitedEmail={}", request.invitedEmail());
 
         Optional<UserCompany> ucOpt = userCompanyService.getUserCompany(request.invitedBy(), companyId);
         if (ucOpt.isEmpty()) {
+            log.warn("User is not associated with the company for invitedEmail={}", request.invitedEmail());
             throw new ConflictException("User is not associated with this company");
         }
         ValidationUtils.validateUserHasRole(ucOpt.get(), UserCompanyRole.OWNER, UserCompanyRole.ADMIN);
+        log.debug("User manager has role Owner or admin for invitedEmail={}", request.invitedEmail());
 
         String token = UUID.randomUUID().toString();
 
@@ -64,18 +71,22 @@ public class InvitationService {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
-
-        return map(invitationRepository.save(invitation));
+        invitation = invitationRepository.save(invitation);
+        log.info("Invitation create successfully for email {}", request.invitedEmail());
+        return map(invitation);
     }
 
     public UserResponse acceptAndRegister(AcceptAndRegisterRequest request) {
+        log.debug("Starting acceptAndRegister for token={}", request.token());
         UserInvitation invitation = invitationRepository.findByInvitationToken(request.token())
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
-
+        log.debug("Invitation found for token={}", request.token());
         if (!InvitationStatus.PENDING.equals(invitation.getStatus())) {
+            log.warn("Invitation status is distinct to PENDING for token={}", request.token());
             throw new ConflictException("Invitation not valid.");
         }
         if (invitation.getExpiresAt().isBefore(Instant.now())) {
+            log.warn("Invitation expired for token={}", request.token());
             throw new ConflictException("Invitation expired.");
         }
 
@@ -87,6 +98,7 @@ public class InvitationService {
                         request.password()
                 )
         );
+        log.debug("User invited register successfully for token={}", request.token());
 
         // Crea el vínculo usuario-empresa (user_companies)
         userCompanyService.registerUserCompanyByInvitation(
@@ -95,13 +107,15 @@ public class InvitationService {
                 invitation.getRole(),
                 invitation.getInvitedBy()
         );
+        log.debug("User invited associated to company for token={}", request.token());
+
 
         // Marca la invitación como aceptada
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitation.setAcceptedAt(Instant.now());
         invitation.setUpdatedAt(Instant.now());
         invitationRepository.save(invitation);
-
+        log.info("Invitation was accepted successfully with token {}", request.token());
         return userResponse;
     }
 
