@@ -6,7 +6,9 @@ import com.valiantech.core.iam.exception.UnauthorizedException;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -15,11 +17,13 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class AuthControllerUnitTest {
+@ExtendWith(MockitoExtension.class)
+class AuthControllerTest {
 
     @Mock
     AuthService authService;
 
+    @InjectMocks
     AuthController controller;
 
     String email = "user@email.com";
@@ -32,12 +36,6 @@ class AuthControllerUnitTest {
     CompanySummary companySummary = new CompanySummary(companyId, "Empresa S.A.", "ADMIN");
     AssociatedCompanies associatedCompanies = new AssociatedCompanies(userResponse, List.of(companySummary), loginTicket);
     LoginResponse loginResponse = new LoginResponse("jwt-token", userResponse, companyId, "ADMIN");
-
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
-        controller = new AuthController(authService);
-    }
 
     @Nested
     @DisplayName("login (POST /api/v1/auth/login)")

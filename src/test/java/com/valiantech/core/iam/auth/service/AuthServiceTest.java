@@ -107,7 +107,7 @@ class AuthServiceTest {
         @ParameterizedTest(name = "{index}: {0}")
         @MethodSource("invalidLoginProvider")
         @DisplayName("Debe lanzar UnauthorizedException en credenciales inválidas o usuario inactivo")
-        void debeLanzarUnauthorizedException(String caso, Optional<User> user, String inputPassword, boolean encoderMatches, UserStatus status) {
+        void shouldThrowUnauthorizedException(String caso, Optional<User> user, String inputPassword, boolean encoderMatches, UserStatus status) {
             // Arrange
             user.ifPresent(u -> u.setStatus(status));
             when(userRepository.findByEmail(email)).thenReturn(user);
@@ -130,7 +130,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("Debe devolver AssociatedCompanies solo con compañías activas y validar interacciones")
-        void debeDevolverAssociatedCompaniesActivasYVerificarLlamados() {
+        void shouldReturnAssociatedCompaniesActivesAndVerifyCalled() {
             // Arrange
             when(userRepository.findByEmail(email)).thenReturn(Optional.of(userActive));
             when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
@@ -168,7 +168,7 @@ class AuthServiceTest {
         @ParameterizedTest(name = "{index}: {0}")
         @MethodSource("invalidTicketProvider")
         @DisplayName("Debe lanzar UnauthorizedException si ticket no existe, expiró, fue usado o email no coincide")
-        void debeLanzarUnauthorizedPorTicketInvalido(String caso, Optional<LoginTicket> ticketMock) {
+        void shouldThrowUnauthorizedByInvalidTicket(String caso, Optional<LoginTicket> ticketMock) {
             when(loginTicketRepository.findById(loginTicket)).thenReturn(ticketMock);
             TokenRequest req = new TokenRequest(email, companyIdActive, loginTicket);
             assertThrows(UnauthorizedException.class, () -> authService.loginWithCompany(req));
@@ -185,7 +185,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("Debe lanzar UnauthorizedException si usuario, afiliación o status no es válido")
-        void debeLanzarUnauthorizedExceptionPorUserOrAffiliation() {
+        void shouldThrowUnauthorizedExceptionByUserOrAffiliation() {
             when(loginTicketRepository.findById(loginTicket)).thenReturn(Optional.of(ticket));
             // Usuario no existe
             when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
@@ -205,7 +205,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("Debe devolver LoginResponse, marcar ticket como usado y validar interacciones")
-        void debeDevolverLoginResponseYVerificarLlamados() {
+        void shouldReturnLoginResponseAndVerifyCalls() {
             // Arrange
             when(loginTicketRepository.findById(loginTicket)).thenReturn(Optional.of(ticket));
             when(userRepository.findByEmail(email)).thenReturn(Optional.of(userActive));
