@@ -2,6 +2,7 @@ package com.valiantech.core.iam.usercompany.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.valiantech.core.iam.exception.ConflictException;
 import com.valiantech.core.iam.usercompany.model.UserCompany;
 import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import com.valiantech.core.iam.usercompany.model.UserCompanyStatus;
@@ -58,7 +59,7 @@ class UserCompanyServiceTest {
             when(userCompanyRepository.findByUserIdAndCompanyId(userId, companyId))
                     .thenReturn(Optional.of(mock(UserCompany.class)));
 
-            assertThrows(RuntimeException.class, () ->
+            assertThrows(ConflictException.class, () ->
                     service.registerUserCompanyByInvitation(userId, companyId, UserCompanyRole.ADMIN, invitedBy)
             );
             verify(userCompanyRepository, never()).save(any());
@@ -92,7 +93,7 @@ class UserCompanyServiceTest {
             when(userCompanyRepository.findByUserIdAndCompanyId(userId, companyId))
                     .thenReturn(Optional.of(mock(UserCompany.class)));
 
-            assertThrows(RuntimeException.class, () ->
+            assertThrows(ConflictException.class, () ->
                     service.registerUserCompany(userId, companyId, UserCompanyRole.OWNER)
             );
             verify(userCompanyRepository, never()).save(any());

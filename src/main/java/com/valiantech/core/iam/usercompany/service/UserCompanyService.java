@@ -1,5 +1,6 @@
 package com.valiantech.core.iam.usercompany.service;
 
+import com.valiantech.core.iam.exception.ConflictException;
 import com.valiantech.core.iam.usercompany.model.UserCompany;
 import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import com.valiantech.core.iam.usercompany.model.UserCompanyStatus;
@@ -20,7 +21,7 @@ public class UserCompanyService {
 
     public UserCompany registerUserCompanyByInvitation(UUID userId, UUID companyId, UserCompanyRole role, UUID invitedBy) {
         if (userCompanyRepository.findByUserIdAndCompanyId(userId, companyId).isPresent()) {
-            throw new RuntimeException("This user is already linked to the company.");
+            throw new ConflictException("This user is already linked to the company.");
         }
 
         UserCompany uc = UserCompany.builder()
@@ -39,7 +40,7 @@ public class UserCompanyService {
 
     public UserCompany registerUserCompany(UUID userId, UUID companyId, UserCompanyRole role) {
         if (userCompanyRepository.findByUserIdAndCompanyId(userId, companyId).isPresent()) {
-            throw new RuntimeException("This user is already linked to the company.");
+            throw new ConflictException("This user is already linked to the company.");
         }
         UserCompany uc = UserCompany.builder()
                 .id(UUID.randomUUID())
