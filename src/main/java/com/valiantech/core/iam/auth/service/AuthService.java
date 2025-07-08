@@ -2,10 +2,13 @@ package com.valiantech.core.iam.auth.service;
 
 import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.model.LoginTicket;
+import com.valiantech.core.iam.auth.model.RefreshToken;
 import com.valiantech.core.iam.auth.repository.LoginTicketRepository;
+import com.valiantech.core.iam.auth.repository.RefreshTokenRepository;
 import com.valiantech.core.iam.company.model.Company;
 import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.UnauthorizedException;
+import com.valiantech.core.iam.security.SecurityUtil;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import com.valiantech.core.iam.user.model.User;
 import com.valiantech.core.iam.user.model.UserStatus;
@@ -61,6 +64,7 @@ public class AuthService {
     private final UserCompanyRepository userCompanyRepository;
     private final CompanyRepository companyRepository;
     private final LoginTicketRepository loginTicketRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     /**
      * Valida las credenciales y retorna las compañías activas asociadas al usuario, junto con un ticket temporal de login.
@@ -135,12 +139,30 @@ public class AuthService {
         }
 
         String role = userCompany.getRole().name();
-        String token = jwtService.generateToken(user, request.companyId(), role);
+        String authToken = jwtService.generateToken(user, request.companyId(), role);
+
+        // Genera el refresh token como UUID string
+        String refreshTokenPlain = UUID.randomUUID().toString();
+        // Calcula el hash SHA-256 del refresh token para almacenarlo seguro
+        String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+
+        // Crea la entidad RefreshToken para persistirla
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setId(UUID.randomUUID());
+        refreshToken.setUserId(user.getId());
+        refreshToken.setCompanyId(request.companyId());
+        refreshToken.setTokenHash(refreshTokenHash);
+        refreshToken.setIssuedAt(Instant.now());
+        refreshToken.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS)); // Expira en 30 días (ajustable)
+        refreshToken.setRevoked(false);
+
+        // Guarda el refresh token en la base de datos
+        refreshTokenRepository.save(refreshToken);
 
         // Invalida el ticket
         ticket.setUsed(true);
         loginTicketRepository.save(ticket);
 
-        return new LoginResponse(token, UserResponse.from(user), request.companyId(), role);
+        return new LoginResponse(authToken, refreshTokenPlain, UserResponse.from(user), request.companyId(), role);
     }
 }

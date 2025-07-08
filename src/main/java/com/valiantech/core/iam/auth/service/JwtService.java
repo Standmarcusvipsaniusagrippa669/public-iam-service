@@ -24,7 +24,7 @@ import java.util.UUID;
  * <b>Notas de seguridad:</b>
  * <ul>
  *   <li>La clave secreta para firmar los JWT se obtiene desde la propiedad {@code jwt.secret}.</li>
- *   <li>El token tiene una expiración de 24 horas desde su emisión.</li>
+ *   <li>El authToken tiene una expiración de 24 horas desde su emisión.</li>
  *   <li>El algoritmo de firma utilizado es HS256.</li>
  * </ul>
  *
@@ -66,11 +66,11 @@ public class JwtService {
     }
 
     /**
-     * Parsea y valida un token JWT, devolviendo los claims incluidos.
+     * Parsea y valida un authToken JWT, devolviendo los claims incluidos.
      *
      * @param token Token JWT firmado
      * @return Claims (reclamos) incluidos en el JWT
-     * @throws io.jsonwebtoken.JwtException Si el token es inválido o está expirado
+     * @throws io.jsonwebtoken.JwtException Si el authToken es inválido o está expirado
      */
     public Claims parseToken(String token) {
         return Jwts.parserBuilder()

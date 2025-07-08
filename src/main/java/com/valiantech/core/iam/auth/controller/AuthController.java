@@ -196,16 +196,16 @@ public class AuthController {
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "Obtención del token",
+                            description = "Obtención del authToken",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = LoginResponse.class),
                                     examples = @ExampleObject(
                                             name = "Token",
-                                            summary = "Se obtiene correctamente el token",
+                                            summary = "Se obtiene correctamente el authToken",
                                             value = """
                                                     {
-                                                         "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjYTUyZjk0MS1hZDBlLTQ0M2YtOTg2Yy0xYjg4MGI2N2Q5ZjQiLCJlbWFpbCI6ImljYXJkZW5hc2NAdmFsaWFuc3BhLmNvbSIsImNvbXBhbnlJZCI6IjFkZTg1YWEzLTAxM2ItNGRmNi04OWUwLTlmOTA0YzIxMDc4NiIsInJvbGUiOiJPV05FUiIsImlhdCI6MTc1MTk0NjQ1MSwiZXhwIjoxNzUyMDMyODUxfQ.LOu4--Nm_G211zIRnomZPF8nqcRE5h1l0E2qaIyMVQo",
+                                                         "authToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjYTUyZjk0MS1hZDBlLTQ0M2YtOTg2Yy0xYjg4MGI2N2Q5ZjQiLCJlbWFpbCI6ImljYXJkZW5hc2NAdmFsaWFuc3BhLmNvbSIsImNvbXBhbnlJZCI6IjFkZTg1YWEzLTAxM2ItNGRmNi04OWUwLTlmOTA0YzIxMDc4NiIsInJvbGUiOiJPV05FUiIsImlhdCI6MTc1MTk0NjQ1MSwiZXhwIjoxNzUyMDMyODUxfQ.LOu4--Nm_G211zIRnomZPF8nqcRE5h1l0E2qaIyMVQo",
                                                          "user": {
                                                              "id": "ca52f941-ad0e-443f-986c-1b880b67d9f4",
                                                              "fullName": "IAN LUCIANO CARDENAS CASTILLO",
