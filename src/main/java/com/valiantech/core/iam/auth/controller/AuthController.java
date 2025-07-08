@@ -369,4 +369,116 @@ public class AuthController {
                 role
         ));
     }
+
+    /**
+     * Endpoint REST para refrescar el token de autenticación (JWT) utilizando un refresh token válido.
+     * <p>
+     * Recibe en el cuerpo de la petición un {@link RefreshTokenRequest} que contiene el refresh token plano.
+     * Este endpoint no requiere autenticación JWT previa pero está protegido mediante limitación de tasa
+     * para prevenir abusos y ataques de fuerza bruta.
+     * </p>
+     * <p>
+     * La lógica delega en el servicio {@code authService.refreshAuthToken} la validación del refresh token,
+     * la generación de un nuevo JWT y un nuevo refresh token (rotación).
+     * </p>
+     *
+     * @param request objeto que contiene el refresh token plano enviado por el cliente.
+     * @return un {@link ResponseEntity} con un {@link RefreshTokenResponse} que incluye el nuevo JWT y refresh token.
+     * @throws com.valiantech.core.iam.exception.UnauthorizedException si el refresh token es inválido, revocado o expirado.
+     */
+    @Operation(
+            summary = "Refrescar el token de autenticación (JWT) utilizando un refresh token válido",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Refresh token success",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "Success",
+                                            value = """
+                                                    {
+                                                      "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VySWQiLCJpYXQiOjE2ODk0NDQwMDAsImV4cCI6MTY4OTQ0NzYwMCwiY29tcGFueUlkIjoiZjQ1ZjQ2LTYxZTQtNDIzMi04ZDZmLTZhNTk0ZjE3OGVhMCIsInJvbGUiOiJBRE1JTiJ9.VP6kTzCphuRWq3cPt94PvPe8A6vDsEOigB-4XIaQDaI",
+                                                      "refresh_token": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Validacion de datos",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "Invalid refresh token",
+                                                    summary = "El refresh token es invalido",
+                                                    value = """
+                                                      {
+                                                           "timestamp": "2025-07-08T03:25:11.460386425Z",
+                                                           "status": 401,
+                                                           "error": "Unauthorized",
+                                                           "message": "Invalid refresh token",
+                                                           "path": "/api/v1/auth/refresh",
+                                                           "validationErrors": null
+                                                       }
+                                                    """
+                                            ),
+                                            @ExampleObject(
+                                                    name = "Refresh token expired or revoked",
+                                                    summary = "El refresh token a expirado o fue revocado",
+                                                    value = """
+                                                      {
+                                                           "timestamp": "2025-07-08T03:25:11.460386425Z",
+                                                           "status": 401,
+                                                           "error": "Unauthorized",
+                                                           "message": "Invalid refresh token",
+                                                           "path": "/api/v1/auth/refresh",
+                                                           "validationErrors": null
+                                                       }
+                                                    """
+                                            ),
+                                            @ExampleObject(
+                                                    name = "Invalid refresh token or user",
+                                                    summary = "No es posible refrescar el token para el usuario",
+                                                    value = """
+                                                      {
+                                                           "timestamp": "2025-07-08T03:25:11.460386425Z",
+                                                           "status": 401,
+                                                           "error": "Unauthorized",
+                                                           "message": "Invalid refresh token or user",
+                                                           "path": "/api/v1/auth/refresh",
+                                                           "validationErrors": null
+                                                       }
+                                                    """
+                                            )
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "429",
+                            description = "Muchas solicitudes",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "Too Many Request",
+                                            summary = "Se realizo muchas solicitudes en un corto periodo de tiempo",
+                                            value = """
+                                                      {
+                                                          "error": "Too Many Requests"
+                                                      }
+                                                    """
+                                    )
+                            )
+                    ),
+            }
+    )
+    @PostMapping("/refresh")
+    @RateLimit(capacity = 10, refill = 10)
+    public ResponseEntity<RefreshTokenResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        RefreshTokenResponse response = authService.refreshAuthToken(request);
+        return ResponseEntity.ok(response);
+    }
 }
