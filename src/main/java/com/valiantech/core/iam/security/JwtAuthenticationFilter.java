@@ -65,9 +65,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String role = claims.get("role", String.class);
         String companyId = claims.get("companyId", String.class);
-        String fullName = claims.get("fullName", String.class);
-        String status = claims.get("status", String.class);
-        Boolean emailValidated = claims.get("emailValidated", Boolean.class);
 
         List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
         // Puedes añadir roles y authorities aquí si lo requieres
@@ -85,9 +82,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         details.put("role", role);
         details.put("ipAddress", standardDetails.getRemoteAddress());
         details.put("sessionId", standardDetails.getSessionId());
-        details.put("fullName", fullName);
-        details.put("emailValidated", emailValidated);
-        details.put("status", status);
+        details.put("fullName", user.getFullName());
+        details.put("emailValidated", user.getEmailValidated());
+        details.put("status", user.getStatus().name());
 
         authentication.setDetails(details);
 

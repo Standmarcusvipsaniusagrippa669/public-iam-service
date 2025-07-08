@@ -1,6 +1,5 @@
 package com.valiantech.core.iam.security;
 
-import com.valiantech.core.iam.auth.security.JwtAuthenticationFilter;
 import com.valiantech.core.iam.auth.service.JwtService;
 import com.valiantech.core.iam.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
