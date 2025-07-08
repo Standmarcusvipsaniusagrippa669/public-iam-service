@@ -8,7 +8,7 @@ CREATE TABLE refresh_token (
     revoked BOOLEAN NOT NULL DEFAULT FALSE,
     client_info TEXT,
     CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id),
-    CONSTRAINT fk_company FOREIGN KEY(company_id) REFERENCES company(id)
+    CONSTRAINT fk_company FOREIGN KEY(company_id) REFERENCES companies(id)
 );
 CREATE INDEX idx_refresh_token_user ON refresh_token(user_id);
 CREATE INDEX idx_refresh_token_token_hash ON refresh_token(token_hash);
