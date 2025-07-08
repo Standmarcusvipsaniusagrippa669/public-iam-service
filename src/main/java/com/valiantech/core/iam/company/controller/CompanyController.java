@@ -2,8 +2,12 @@ package com.valiantech.core.iam.company.controller;
 
 import com.valiantech.core.iam.company.dto.*;
 import com.valiantech.core.iam.company.service.CompanyService;
+import com.valiantech.core.iam.exception.ErrorResponse;
 import com.valiantech.core.iam.security.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -71,10 +75,104 @@ public class CompanyController {
      */
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
-            summary = "Create a new company",
+            summary = "Crea una nueva compañía y su usuario owner mediante el proceso de onboarding",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Company successfully created"),
-                    @ApiResponse(responseCode = "409", description = "Company with same RUT already exists")
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Company successfully created",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = CompanyResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "Token",
+                                            summary = "Se obtiene correctamente el token",
+                                            value = """
+                                                    {
+                                                        "id": "26823bec-b626-4547-956e-3bcae0352d13",
+                                                        "rut": "77180451-9",
+                                                        "businessName": "INVERSIONES VALIAN SPA",
+                                                        "tradeName": "VALIANSPA",
+                                                        "activity": "GESTION Y ASESORIAS",
+                                                        "address": "AVENIDA CONSISTORIAL 2401 OF 607",
+                                                        "commune": "NUNOA",
+                                                        "region": "METROPOLINTANA",
+                                                        "email": "ICARDENASC@VALIANSPA.COM",
+                                                        "phone": "981885606",
+                                                        "logoUrl": null,
+                                                        "status": "ACTIVE",
+                                                        "createdAt": "2025-07-05T09:51:07.088958100Z",
+                                                        "updatedAt": "2025-07-05T09:51:07.088958100Z"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "Company with this RUT already exists.",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "Company with this RUT already exists.",
+                                                    summary = "La compañia con el rut ya existe",
+                                                    value = """
+                                                              {
+                                                                  "timestamp": "2025-07-05T09:51:35.494581600Z",
+                                                                  "status": 409,
+                                                                  "error": "Conflict",
+                                                                  "message": "Company with this RUT already exists.",
+                                                                  "path": "/api/v1/companies",
+                                                                  "validationErrors": null
+                                                              }
+                                                            """
+                                            ),
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "One or more fields are invalid.",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "One or more fields are invalid.",
+                                                    summary = "One or more fields are invalid.",
+                                                    value = """
+                                                            {
+                                                                "timestamp": "2025-07-05T09:52:23.394261700Z",
+                                                                "status": 400,
+                                                                "error": "Validation Failed",
+                                                                "message": "One or more fields are invalid.",
+                                                                "path": "/api/v1/companies",
+                                                                "validationErrors": {
+                                                                    "rut": "no debe estar vacío"
+                                                                }
+                                                            }
+                                                            """
+                                            ),
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "429",
+                            description = "Muchas solicitudes",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "Too Many Request",
+                                            summary = "Se realizo muchas solicitudes en un corto periodo de tiempo",
+                                            value = """
+                                                      {
+                                                          "error": "Too Many Requests"
+                                                      }
+                                                    """
+                                    )
+                            )
+                    ),
             }
     )
     @PostMapping("/onboarding")
@@ -89,12 +187,81 @@ public class CompanyController {
      * @param request Datos de actualización de la empresa.
      * @return Respuesta con los datos actualizados de la empresa.
      */
-    @SecurityRequirement(name = "bearerAuth")
+
     @Operation(
             summary = "Actualizar mi empresa (según el contexto del token)",
+            security = @SecurityRequirement(name = "bearerAuth"),
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Empresa actualizada"),
-                    @ApiResponse(responseCode = "404", description = "Empresa no encontrada")
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Company successfully updated",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = CompanyResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "Company data",
+                                            summary = "Se obtiene correctamente la informacion actualizada de la empresa",
+                                            value = """
+                                                    {
+                                                        "id": "26823bec-b626-4547-956e-3bcae0352d13",
+                                                        "rut": "77180451-9",
+                                                        "businessName": "INVERSIONES VALIAN SPA",
+                                                        "tradeName": "VALIANSPA",
+                                                        "activity": "GESTION Y ASESORIAS",
+                                                        "address": "AVENIDA CONSISTORIAL 2401 OF 607",
+                                                        "commune": "NUNOA",
+                                                        "region": "METROPOLINTANA",
+                                                        "email": "ICARDENASC@VALIANSPA.COM",
+                                                        "phone": "981885606",
+                                                        "logoUrl": null,
+                                                        "status": "ACTIVE",
+                                                        "createdAt": "2025-07-05T09:51:07.088958100Z",
+                                                        "updatedAt": "2025-07-05T09:51:07.088958100Z"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Company not found.",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "Company not found.",
+                                                    summary = "La compañia no existe",
+                                                    value = """
+                                                              {
+                                                                  "timestamp": "2025-07-05T09:51:35.494581600Z",
+                                                                  "status": 404,
+                                                                  "error": "Conflict",
+                                                                  "message": "Company not found.",
+                                                                  "path": "/api/v1/companies/me",
+                                                                  "validationErrors": null
+                                                              }
+                                                            """
+                                            ),
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "429",
+                            description = "Muchas solicitudes",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "Too Many Request",
+                                            summary = "Se realizo muchas solicitudes en un corto periodo de tiempo",
+                                            value = """
+                                                      {
+                                                          "error": "Too Many Requests"
+                                                      }
+                                                    """
+                                    )
+                            )
+                    ),
             }
     )
     @PutMapping("/me")
@@ -112,10 +279,78 @@ public class CompanyController {
      */
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
-            summary = "Obtener los datos de mi empresa (según el contexto del token)",
+            summary = "Endpoint para obtener los datos de la empresa asociada al usuario autenticado.",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Empresa encontrada"),
-                    @ApiResponse(responseCode = "404", description = "Empresa no encontrada o no tienes acceso")
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Company successfully retrieve",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = CompanyResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "Company data",
+                                            summary = "Se obtiene correctamente la informacion de la empresa",
+                                            value = """
+                                                    {
+                                                        "id": "26823bec-b626-4547-956e-3bcae0352d13",
+                                                        "rut": "77180451-9",
+                                                        "businessName": "INVERSIONES VALIAN SPA",
+                                                        "tradeName": "VALIANSPA",
+                                                        "activity": "GESTION Y ASESORIAS",
+                                                        "address": "AVENIDA CONSISTORIAL 2401 OF 607",
+                                                        "commune": "NUNOA",
+                                                        "region": "METROPOLINTANA",
+                                                        "email": "ICARDENASC@VALIANSPA.COM",
+                                                        "phone": "981885606",
+                                                        "logoUrl": null,
+                                                        "status": "ACTIVE",
+                                                        "createdAt": "2025-07-05T09:51:07.088958100Z",
+                                                        "updatedAt": "2025-07-05T09:51:07.088958100Z"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Company not found.",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "Company not found.",
+                                                    summary = "La compañia no existe",
+                                                    value = """
+                                                              {
+                                                                  "timestamp": "2025-07-05T09:51:35.494581600Z",
+                                                                  "status": 404,
+                                                                  "error": "Conflict",
+                                                                  "message": "Company not found.",
+                                                                  "path": "/api/v1/companies/me",
+                                                                  "validationErrors": null
+                                                              }
+                                                            """
+                                            ),
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "429",
+                            description = "Muchas solicitudes",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "Too Many Request",
+                                            summary = "Se realizo muchas solicitudes en un corto periodo de tiempo",
+                                            value = """
+                                                      {
+                                                          "error": "Too Many Requests"
+                                                      }
+                                                    """
+                                    )
+                            )
+                    ),
             }
     )
     @GetMapping("/me")
