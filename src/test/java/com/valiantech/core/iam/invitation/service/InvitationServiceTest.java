@@ -57,7 +57,7 @@ class InvitationServiceTest {
         @Test
         @DisplayName("Debe crear la invitación si todo es válido")
         void shouldCreateInvitationIfValid() {
-            CreateInvitationRequest req = new CreateInvitationRequest(companyId, UserCompanyRole.ADMIN, invitedEmail, invitedBy);
+            CreateInvitationRequest req = new CreateInvitationRequest(UserCompanyRole.ADMIN, invitedEmail, invitedBy);
             UserResponse userResponse = new UserResponse(invitedBy, "Inviter", "inviter@e.cl", true, UserStatus.ACTIVE, null, null, null);
             CompanyResponse companyResponse = new CompanyResponse(companyId, "12.345.678-9", "Empresa", "Empresa", "Act", "Dir", "Com", "Reg", "c@e.cl", "123", "logo", CompanyStatus.ACTIVE, null, null);
 
@@ -85,7 +85,7 @@ class InvitationServiceTest {
 
             when(invitationRepository.save(any(UserInvitation.class))).thenReturn(savedInvitation);
 
-            InvitationResponse response = invitationService.create(req);
+            InvitationResponse response = invitationService.create(companyId, req);
 
             assertEquals(invitedEmail, response.invitedEmail());
             assertEquals(companyId, response.companyId());
@@ -99,7 +99,7 @@ class InvitationServiceTest {
         @Test
         @DisplayName("Debe lanzar ConflictException si el usuario no está asociado a la empresa")
         void shouldThrowConflictIfUserNotAssociated() {
-            CreateInvitationRequest req = new CreateInvitationRequest(companyId, UserCompanyRole.ADMIN, invitedEmail, invitedBy);
+            CreateInvitationRequest req = new CreateInvitationRequest(UserCompanyRole.ADMIN, invitedEmail, invitedBy);
             UserResponse userResponse = new UserResponse(invitedBy, "Inviter", "inviter@e.cl", true, UserStatus.ACTIVE, null, null, null);
             CompanyResponse companyResponse = new CompanyResponse(companyId, "12.345.678-9", "Empresa", "Empresa", "Act", "Dir", "Com", "Reg", "c@e.cl", "123", "logo", CompanyStatus.ACTIVE, null, null);
 
@@ -107,7 +107,7 @@ class InvitationServiceTest {
             when(companyService.getCompany(companyId)).thenReturn(companyResponse);
             when(userCompanyService.getUserCompany(invitedBy, companyId)).thenReturn(Optional.empty());
 
-            assertThrows(ConflictException.class, () -> invitationService.create(req));
+            assertThrows(ConflictException.class, () -> invitationService.create(companyId, req));
         }
     }
 
@@ -200,9 +200,9 @@ class InvitationServiceTest {
                     .createdAt(now)
                     .updatedAt(now)
                     .build();
-            when(invitationRepository.findByInvitationToken(token)).thenReturn(Optional.of(invitation));
+            when(invitationRepository.findByInvitationTokenAndCompanyId(token, companyId)).thenReturn(Optional.of(invitation));
 
-            InvitationResponse response = invitationService.getByToken(token);
+            InvitationResponse response = invitationService.getByToken(companyId, token);
 
             assertEquals(invitedEmail, response.invitedEmail());
             assertEquals(token, response.invitationToken());
@@ -211,9 +211,9 @@ class InvitationServiceTest {
         @Test
         @DisplayName("Debe lanzar NotFoundException si el token no existe")
         void shouldThrowNotFoundIfTokenNotExists() {
-            when(invitationRepository.findByInvitationToken(token)).thenReturn(Optional.empty());
+            when(invitationRepository.findByInvitationTokenAndCompanyId(token, companyId)).thenReturn(Optional.empty());
 
-            assertThrows(NotFoundException.class, () -> invitationService.getByToken(token));
+            assertThrows(NotFoundException.class, () -> invitationService.getByToken(companyId, token));
         }
 
         @Test
@@ -223,9 +223,9 @@ class InvitationServiceTest {
                     .status(InvitationStatus.EXPIRED)
                     .expiresAt(now.minus(1, ChronoUnit.DAYS))
                     .build();
-            when(invitationRepository.findByInvitationToken(token)).thenReturn(Optional.of(invitation));
+            when(invitationRepository.findByInvitationTokenAndCompanyId(token, companyId)).thenReturn(Optional.of(invitation));
 
-            assertThrows(ConflictException.class, () -> invitationService.getByToken(token));
+            assertThrows(ConflictException.class, () -> invitationService.getByToken(companyId, token));
         }
     }
 
@@ -239,9 +239,9 @@ class InvitationServiceTest {
                     UserInvitation.builder().id(UUID.randomUUID()).invitedEmail("a@e.cl").build(),
                     UserInvitation.builder().id(UUID.randomUUID()).invitedEmail("b@e.cl").build()
             );
-            when(invitationRepository.findAll()).thenReturn(invitations);
+            when(invitationRepository.findAllByCompanyId(companyId)).thenReturn(invitations);
 
-            List<InvitationResponse> responses = invitationService.listAll();
+            List<InvitationResponse> responses = invitationService.listAll(companyId);
 
             assertEquals(2, responses.size());
             assertEquals("a@e.cl", responses.get(0).invitedEmail());

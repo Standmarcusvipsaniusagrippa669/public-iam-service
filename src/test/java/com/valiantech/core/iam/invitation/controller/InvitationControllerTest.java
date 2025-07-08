@@ -8,6 +8,7 @@ import com.valiantech.core.iam.invitation.controller.InvitationController;
 import com.valiantech.core.iam.invitation.dto.*;
 import com.valiantech.core.iam.invitation.model.InvitationStatus;
 import com.valiantech.core.iam.invitation.service.InvitationService;
+import com.valiantech.core.iam.security.SecurityUtil;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import org.junit.jupiter.api.*;
@@ -35,6 +36,8 @@ class InvitationControllerTest {
     @InjectMocks
     InvitationController controller;
 
+    UUID companyId = UUID.randomUUID();
+
 
     @Nested
     @DisplayName("POST /api/v1/invitations")
@@ -45,7 +48,6 @@ class InvitationControllerTest {
         void shouldReturn200AndInvitationOnSuccess() {
             UUID invitedBy = UUID.randomUUID();
             CreateInvitationRequest request = new CreateInvitationRequest(
-                    UUID.randomUUID(),
                     UserCompanyRole.ADMIN,
                     "oneemail@domain.com",
                     invitedBy
@@ -53,7 +55,7 @@ class InvitationControllerTest {
             InvitationResponse response = new InvitationResponse(
                     UUID.randomUUID(),
                     "email@domain.com",
-                    UUID.randomUUID(),
+                    companyId,
                     UserCompanyRole.ADMIN,
                     invitedBy,
                     UUID.randomUUID().toString(),
@@ -64,31 +66,35 @@ class InvitationControllerTest {
                     Instant.now(),
                     Instant.now()
             );
+            try (var mocked = mockStatic(SecurityUtil.class)) {
+                mocked.when(SecurityUtil::getCompanyIdFromContext).thenReturn(companyId);
+                when(invitationService.create(companyId, request)).thenReturn(response);
 
-            when(invitationService.create(request)).thenReturn(response);
+                var result = controller.create(request);
 
-            var result = controller.create(request);
+                assertEquals(200, result.getStatusCode().value());
+                assertEquals(response, result.getBody());
+                verify(invitationService, times(1)).create(companyId, request);
+            }
 
-            assertEquals(200, result.getStatusCode().value());
-            assertEquals(response, result.getBody());
-            verify(invitationService, times(1)).create(request);
         }
 
         @Test
         @DisplayName("Debe propagar ConflictException si ya existe una invitación igual")
         void shouldThrowConflictIfInvitationAlreadyExists() {
             CreateInvitationRequest request = new CreateInvitationRequest(
-                    UUID.randomUUID(),
                     UserCompanyRole.ADMIN,
                     "oneemail@domain.com",
                     UUID.randomUUID()
             );
+            try (var mocked = mockStatic(SecurityUtil.class)) {
+                mocked.when(SecurityUtil::getCompanyIdFromContext).thenReturn(companyId);
+                when(invitationService.create(companyId, request)).thenThrow(new ConflictException("Invitación duplicada"));
 
-            when(invitationService.create(request)).thenThrow(new ConflictException("Invitación duplicada"));
-
-            ConflictException ex = assertThrows(ConflictException.class, () -> controller.create(request));
-            assertTrue(ex.getMessage().contains("Invitación duplicada"));
-            verify(invitationService, times(1)).create(request);
+                ConflictException ex = assertThrows(ConflictException.class, () -> controller.create(request));
+                assertTrue(ex.getMessage().contains("Invitación duplicada"));
+                verify(invitationService, times(1)).create(companyId, request);
+            }
         }
     }
 
@@ -159,7 +165,7 @@ class InvitationControllerTest {
             InvitationResponse response = new InvitationResponse(
                     UUID.randomUUID(),
                     "email@domain.com",
-                    UUID.randomUUID(),
+                    companyId,
                     UserCompanyRole.ADMIN,
                     UUID.randomUUID(),
                     UUID.randomUUID().toString(),
@@ -171,13 +177,17 @@ class InvitationControllerTest {
                     Instant.now()
             );
 
-            when(invitationService.getByToken(token)).thenReturn(response);
+            try (var mocked = mockStatic(SecurityUtil.class)) {
+                mocked.when(SecurityUtil::getCompanyIdFromContext).thenReturn(companyId);
+                when(invitationService.getByToken(companyId, token)).thenReturn(response);
 
-            var result = controller.getByToken(token);
+                var result = controller.getByToken(token);
 
-            assertEquals(200, result.getStatusCode().value());
-            assertEquals(response, result.getBody());
-            verify(invitationService, times(1)).getByToken(token);
+                assertEquals(200, result.getStatusCode().value());
+                assertEquals(response, result.getBody());
+                verify(invitationService, times(1)).getByToken(companyId, token);
+            }
+
         }
 
         @Test
@@ -185,11 +195,15 @@ class InvitationControllerTest {
         void shouldThrowNotFoundIfInvitationNotExists() {
             String token = "invalido";
 
-            when(invitationService.getByToken(token)).thenThrow(new NotFoundException("No encontrada"));
+            try (var mocked = mockStatic(SecurityUtil.class)) {
+                mocked.when(SecurityUtil::getCompanyIdFromContext).thenReturn(companyId);
+                when(invitationService.getByToken(companyId, token)).thenThrow(new NotFoundException("No encontrada"));
 
-            NotFoundException ex = assertThrows(NotFoundException.class, () -> controller.getByToken(token));
-            assertTrue(ex.getMessage().contains("No encontrada"));
-            verify(invitationService, times(1)).getByToken(token);
+                NotFoundException ex = assertThrows(NotFoundException.class, () -> controller.getByToken(token));
+                assertTrue(ex.getMessage().contains("No encontrada"));
+                verify(invitationService, times(1)).getByToken(companyId, token);
+            }
+
         }
     }
 
@@ -203,7 +217,7 @@ class InvitationControllerTest {
             List<InvitationResponse> responses = List.of(new InvitationResponse(
                     UUID.randomUUID(),
                     "email@domain.com",
-                    UUID.randomUUID(),
+                    companyId,
                     UserCompanyRole.ADMIN,
                     UUID.randomUUID(),
                     UUID.randomUUID().toString(),
@@ -216,7 +230,7 @@ class InvitationControllerTest {
             ), new InvitationResponse(
                     UUID.randomUUID(),
                     "email@domain.com",
-                    UUID.randomUUID(),
+                    companyId,
                     UserCompanyRole.ADMIN,
                     UUID.randomUUID(),
                     UUID.randomUUID().toString(),
@@ -228,13 +242,17 @@ class InvitationControllerTest {
                     Instant.now()
             ));
 
-            when(invitationService.listAll()).thenReturn(responses);
+            try (var mocked = mockStatic(SecurityUtil.class)) {
+                mocked.when(SecurityUtil::getCompanyIdFromContext).thenReturn(companyId);
+                when(invitationService.listAll(companyId)).thenReturn(responses);
 
-            var result = controller.list();
+                var result = controller.list();
 
-            assertEquals(200, result.getStatusCode().value());
-            assertEquals(responses, result.getBody());
-            verify(invitationService, times(1)).listAll();
+                assertEquals(200, result.getStatusCode().value());
+                assertEquals(responses, result.getBody());
+                verify(invitationService, times(1)).listAll(companyId);
+            }
+
         }
     }
 }
