@@ -1,12 +1,20 @@
 package com.valiantech.core.iam.security;
 
 import com.valiantech.core.iam.exception.ForbiddenException;
+import com.valiantech.core.iam.exception.GenericException;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.UUID;
 
 public class SecurityUtil {
+    SecurityUtil() {
+        // empty
+    }
     public static UUID getCompanyIdFromContext() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null)
@@ -24,6 +32,16 @@ public class SecurityUtil {
             return UUID.fromString(companyIdObj.toString());
         } catch (IllegalArgumentException e) {
             throw new ForbiddenException("Invalid companyId in token");
+        }
+    }
+
+    public static String sha256Hex(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new GenericException(String.format("SHA-256 algorithm not available: %s", e.getMessage()));
         }
     }
 }
