@@ -1,4 +1,4 @@
-package com.valiantech.core.iam.auth.security;
+package com.valiantech.core.iam.security;
 
 import com.valiantech.core.iam.auth.service.JwtService;
 import com.valiantech.core.iam.user.model.User;
@@ -65,6 +65,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String role = claims.get("role", String.class);
         String companyId = claims.get("companyId", String.class);
+        String fullName = claims.get("fullName", String.class);
+        String status = claims.get("status", String.class);
+        Boolean emailValidated = claims.get("emailValidated", Boolean.class);
 
         List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
         // Puedes añadir roles y authorities aquí si lo requieres
@@ -77,10 +80,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 new WebAuthenticationDetailsSource().buildDetails(request);
 
         Map<String, Object> details = new HashMap<>();
+        details.put("email", user.getEmail());
         details.put("companyId", companyId);
         details.put("role", role);
         details.put("ipAddress", standardDetails.getRemoteAddress());
         details.put("sessionId", standardDetails.getSessionId());
+        details.put("fullName", fullName);
+        details.put("emailValidated", emailValidated);
+        details.put("status", status);
 
         authentication.setDetails(details);
 
