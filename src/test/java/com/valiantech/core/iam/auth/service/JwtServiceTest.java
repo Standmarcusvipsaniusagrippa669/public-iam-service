@@ -1,6 +1,7 @@
 package com.valiantech.core.iam.auth.service;
 
 import com.valiantech.core.iam.user.model.User;
+import com.valiantech.core.iam.user.model.UserStatus;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.*;
@@ -18,6 +19,7 @@ class JwtServiceTest {
     User user = User.builder()
             .id(UUID.randomUUID())
             .email("test@email.com")
+            .status(UserStatus.ACTIVE)
             .build();
 
     UUID companyId = UUID.randomUUID();
