@@ -10,6 +10,7 @@ import com.valiantech.core.iam.user.repository.UserRepository;
 import com.valiantech.core.iam.usercompany.model.UserCompany;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class UserService {
 
     private static final String USER_NOT_FOUND = "User not found";
@@ -27,18 +29,23 @@ public class UserService {
     private final UserCompanyService userCompanyService;
 
     public UserResponse registerActiveUser(CreateUserRequest request) {
+        log.debug("Starting registerActiveUser for email={}", request.email());
         checkEmailUnique(request.email());
-        return map(userRepository.save(buildUserEntity(request, UserStatus.ACTIVE, true)));
+        log.debug("User email is unique for email={}", request.email());
+        User user = userRepository.save(buildUserEntity(request, UserStatus.ACTIVE, true));
+        log.info("User {} create successfully", request.email());
+        return map(user);
     }
 
     public UserResponse updateUser(UUID userId, UUID companyId, UpdateUserRequest request) {
+        log.debug("Starting updateUser for userId={}", userId);
         UserCompany userCompany = userCompanyService.getUserCompany(userId, companyId).orElseThrow(
                 () -> new UnauthorizedException("Update not allowed")
         );
-
+        log.debug("User associated to company for userId={}", userId);
         User user = userRepository.findById(userCompany.getUserId())
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
-
+        log.debug("User found for userId={}", userId);
         if (request.fullName() != null && !request.fullName().equals(user.getFullName())) {
             user.setFullName(request.fullName());
         }
@@ -60,7 +67,9 @@ public class UserService {
         }
 
         user.setUpdatedAt(Instant.now());
-        return map(userRepository.save(user));
+        user = userRepository.save(user);
+        log.info("User {} update successfully", userId);
+        return map(user);
     }
 
     public UserResponse getUser(UUID id) {
