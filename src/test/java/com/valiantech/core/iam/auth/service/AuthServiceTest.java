@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.model.*;
 import com.valiantech.core.iam.auth.repository.LoginTicketRepository;
+import com.valiantech.core.iam.auth.repository.RefreshTokenRepository;
 import com.valiantech.core.iam.company.model.*;
 import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.UnauthorizedException;
@@ -41,6 +42,8 @@ class AuthServiceTest {
     CompanyRepository companyRepository;
     @Mock
     LoginTicketRepository loginTicketRepository;
+    @Mock
+    RefreshTokenRepository refreshTokenRepository;
     @InjectMocks AuthService authService;
 
     // Datos comunes
@@ -210,9 +213,10 @@ class AuthServiceTest {
             when(loginTicketRepository.findById(loginTicket)).thenReturn(Optional.of(ticket));
             when(userRepository.findByEmail(email)).thenReturn(Optional.of(userActive));
             when(userCompanyRepository.findByUserIdAndCompanyId(userId, companyIdActive)).thenReturn(Optional.of(activeUserCompany));
-            String jwt = "jwt-token";
+            String jwt = "jwt-authToken";
             when(jwtService.generateToken(userActive, companyIdActive, activeUserCompany.getRole().name())).thenReturn(jwt);
             when(loginTicketRepository.save(any(LoginTicket.class))).thenReturn(ticket);
+            when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(i -> i.getArgument(0));
 
             TokenRequest req = new TokenRequest(email, companyIdActive, loginTicket);
 
@@ -225,7 +229,7 @@ class AuthServiceTest {
             verify(jwtService, times(1)).generateToken(userActive, companyIdActive, activeUserCompany.getRole().name());
             verify(loginTicketRepository, times(1)).save(any(LoginTicket.class));
 
-            assertEquals(jwt, resp.token());
+            assertEquals(jwt, resp.authToken());
             assertEquals(email, resp.user().email());
             assertEquals(companyIdActive, resp.companyId());
             assertEquals(activeUserCompany.getRole().name(), resp.role());

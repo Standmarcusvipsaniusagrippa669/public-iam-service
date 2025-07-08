@@ -54,7 +54,7 @@ class JwtServiceTest {
     }
 
     @Test
-    @DisplayName("Debe lanzar excepción si el token está firmado con otro secret")
+    @DisplayName("Debe lanzar excepción si el authToken está firmado con otro secret")
     void shouldFailOnTokenWithInvalidSecret() {
         String token = jwtService.generateToken(user, companyId, role);
 
@@ -72,7 +72,7 @@ class JwtServiceTest {
     }
 
     @Test
-    @DisplayName("Debe lanzar excepción si el token está mal formado")
+    @DisplayName("Debe lanzar excepción si el authToken está mal formado")
     void shouldFailOnMalformedToken() {
         String invalidToken = "this.is.not.a.jwt";
         assertThrows(JwtException.class, () -> jwtService.parseToken(invalidToken));

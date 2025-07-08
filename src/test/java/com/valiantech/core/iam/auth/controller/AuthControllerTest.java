@@ -40,7 +40,7 @@ class AuthControllerTest {
     UserResponse userResponse = new UserResponse(userId, "User", email, true, null, null, null, null);
     CompanySummary companySummary = new CompanySummary(companyId, "Empresa S.A.", "ADMIN");
     AssociatedCompanies associatedCompanies = new AssociatedCompanies(userResponse, List.of(companySummary), loginTicket);
-    LoginResponse loginResponse = new LoginResponse("jwt-token", userResponse, companyId, "ADMIN");
+    LoginResponse loginResponse = new LoginResponse("jwt-authToken", UUID.randomUUID().toString(), userResponse, companyId, "ADMIN");
 
     @Nested
     @DisplayName("login (POST /api/v1/auth/login)")
@@ -54,7 +54,7 @@ class AuthControllerTest {
 
             ResponseEntity<AssociatedCompanies> response = controller.login(req);
 
-            assertEquals(200, response.getStatusCodeValue());
+            assertEquals(200, response.getStatusCode().value());
             assertEquals(associatedCompanies, response.getBody());
             verify(authService, times(1)).fetchCompanies(req);
         }
@@ -86,7 +86,7 @@ class AuthControllerTest {
 
             ResponseEntity<LoginResponse> response = controller.loginWithCompany(req);
 
-            assertEquals(200, response.getStatusCodeValue());
+            assertEquals(200, response.getStatusCode().value());
             assertEquals(loginResponse, response.getBody());
             verify(authService, times(1)).loginWithCompany(req);
         }
@@ -185,7 +185,7 @@ class AuthControllerTest {
                 ResponseEntity<WhoamiResponse> response = controller.whoami();
 
                 // Assert
-                assertEquals(200, response.getStatusCodeValue());
+                assertEquals(200, response.getStatusCode().value());
                 WhoamiResponse body = response.getBody();
                 assertNotNull(body);
                 assertEquals(userId, body.userId());
