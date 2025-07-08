@@ -8,8 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record CreateInvitationRequest(
-        @NotNull UUID companyId,
-
         @NotNull UserCompanyRole role,
 
         @NotBlank @Email String invitedEmail,

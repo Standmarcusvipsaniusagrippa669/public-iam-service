@@ -36,14 +36,14 @@ public class InvitationService {
 
     private final InvitationProperties invitationProperties;
 
-    public InvitationResponse create(CreateInvitationRequest request) {
+    public InvitationResponse create(UUID companyId, CreateInvitationRequest request) {
         UserResponse user = userService.getUser(request.invitedBy());
         ValidationUtils.validateUserIsActive(user);
 
-        CompanyResponse company = companyService.getCompany(request.companyId());
+        CompanyResponse company = companyService.getCompany(companyId);
         ValidationUtils.validateCompanyIsActive(company);
 
-        Optional<UserCompany> ucOpt = userCompanyService.getUserCompany(request.invitedBy(), request.companyId());
+        Optional<UserCompany> ucOpt = userCompanyService.getUserCompany(request.invitedBy(), companyId);
         if (ucOpt.isEmpty()) {
             throw new ConflictException("User is not associated with this company");
         }
@@ -54,7 +54,7 @@ public class InvitationService {
         UserInvitation invitation = UserInvitation.builder()
                 .id(UUID.randomUUID())
                 .invitedEmail(request.invitedEmail())
-                .companyId(request.companyId())
+                .companyId(companyId)
                 .role(request.role())
                 .invitedBy(request.invitedBy())
                 .invitationToken(token)
@@ -105,8 +105,8 @@ public class InvitationService {
         return userResponse;
     }
 
-    public InvitationResponse getByToken(String token) {
-        UserInvitation invitation = invitationRepository.findByInvitationToken(token)
+    public InvitationResponse getByToken(UUID companyId, String token) {
+        UserInvitation invitation = invitationRepository.findByInvitationTokenAndCompanyId(token, companyId)
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
 
         // Puedes validar aquí si el estado es válido para registro
@@ -117,8 +117,8 @@ public class InvitationService {
         return map(invitation);
     }
 
-    public List<InvitationResponse> listAll() {
-        return invitationRepository.findAll().stream().map(this::map).toList();
+    public List<InvitationResponse> listAll(UUID companyId) {
+        return invitationRepository.findAllByCompanyId(companyId).stream().map(this::map).toList();
     }
 
     private InvitationResponse map(UserInvitation i) {

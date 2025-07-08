@@ -3,6 +3,7 @@ package com.valiantech.core.iam.invitation.controller;
 import com.valiantech.core.iam.invitation.dto.*;
 import com.valiantech.core.iam.invitation.service.InvitationService;
 import com.valiantech.core.iam.ratelimit.RateLimit;
+import com.valiantech.core.iam.security.SecurityUtil;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/invitations")
@@ -34,7 +36,8 @@ public class InvitationController {
     @PostMapping
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public ResponseEntity<InvitationResponse> create(@Valid @RequestBody CreateInvitationRequest request) {
-        return ResponseEntity.ok(invitationService.create(request));
+        UUID companyId = SecurityUtil.getCompanyIdFromContext();
+        return ResponseEntity.ok(invitationService.create(companyId, request));
     }
 
     @Operation(
@@ -63,7 +66,8 @@ public class InvitationController {
     @GetMapping("/{token}")
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public ResponseEntity<InvitationResponse> getByToken(@PathVariable String token) {
-        return ResponseEntity.ok(invitationService.getByToken(token));
+        UUID companyId = SecurityUtil.getCompanyIdFromContext();
+        return ResponseEntity.ok(invitationService.getByToken(companyId, token));
     }
 
     @SecurityRequirement(name = "bearerAuth")
@@ -76,6 +80,7 @@ public class InvitationController {
     @GetMapping
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public ResponseEntity<List<InvitationResponse>> list() {
-        return ResponseEntity.ok(invitationService.listAll());
+        UUID companyId = SecurityUtil.getCompanyIdFromContext();
+        return ResponseEntity.ok(invitationService.listAll(companyId));
     }
 }
