@@ -53,3 +53,8 @@ valiantech:
   invitation:
     registration-url-base: ${INVITATION_REGISTRATION_URL_BASE}
     token-expiry-days: ${INVITATION_TOKEN_EXPIRY_DAYS}
+
+logging:
+  level:
+    root: DEBUG
+    com.valiantech.core.iam: DEBUG

@@ -53,3 +53,8 @@ valiantech:
   invitation:
     registration-url-base: http://localhost/register
     token-expiry-days: 7
+
+logging:
+  level:
+    root: INFO
+    com.valiantech.core.iam: INFO
