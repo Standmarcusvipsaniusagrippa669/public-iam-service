@@ -200,4 +200,49 @@ class AuthControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("POST /api/v1/auth/refresh")
+    class RefreshTokenTests {
+
+        @Test
+        @DisplayName("Debe retornar 200 y nuevo JWT y refresh token si refresh token es válido")
+        void shouldReturn200AndTokensIfValid() {
+            String oldRefresh = "old-refresh-token";
+            String newJwt = "new.jwt.token";
+            String newRefresh = "new-refresh-token";
+            RefreshTokenRequest req = new RefreshTokenRequest(oldRefresh);
+            RefreshTokenResponse resp = new RefreshTokenResponse(newJwt, newRefresh);
+
+            when(authService.refreshAuthToken(req)).thenReturn(resp);
+
+            var result = controller.refreshToken(req);
+
+            assertEquals(200, result.getStatusCode().value());
+            assertEquals(resp, result.getBody());
+            verify(authService).refreshAuthToken(req);
+        }
+
+        @Test
+        @DisplayName("Debe lanzar UnauthorizedException si el refresh token es inválido o revocado")
+        void shouldThrowUnauthorizedIfRefreshInvalidOrRevoked() {
+            RefreshTokenRequest req = new RefreshTokenRequest("invalid-refresh");
+            when(authService.refreshAuthToken(req)).thenThrow(new UnauthorizedException("Invalid refresh token"));
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> controller.refreshToken(req));
+            assertTrue(ex.getMessage().contains("Invalid refresh token"));
+            verify(authService).refreshAuthToken(req);
+        }
+
+        @Test
+        @DisplayName("Debe lanzar UnauthorizedException si el usuario es inválido o no existe")
+        void shouldThrowUnauthorizedIfUserInvalid() {
+            RefreshTokenRequest req = new RefreshTokenRequest("refresh-token-user-invalid");
+            when(authService.refreshAuthToken(req)).thenThrow(new UnauthorizedException("Invalid refresh token or user"));
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> controller.refreshToken(req));
+            assertTrue(ex.getMessage().contains("Invalid refresh token or user"));
+            verify(authService).refreshAuthToken(req);
+        }
+    }
+
 }
