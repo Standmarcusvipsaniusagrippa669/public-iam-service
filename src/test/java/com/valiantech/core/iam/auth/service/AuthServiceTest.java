@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -14,6 +15,7 @@ import com.valiantech.core.iam.auth.repository.RefreshTokenRepository;
 import com.valiantech.core.iam.company.model.*;
 import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.UnauthorizedException;
+import com.valiantech.core.iam.security.SecurityUtil;
 import com.valiantech.core.iam.user.model.*;
 import com.valiantech.core.iam.user.repository.UserRepository;
 import com.valiantech.core.iam.usercompany.model.*;
@@ -233,6 +235,199 @@ class AuthServiceTest {
             assertEquals(email, resp.user().email());
             assertEquals(companyIdActive, resp.companyId());
             assertEquals(activeUserCompany.getRole().name(), resp.role());
+        }
+    }
+
+    @Nested
+    class RefreshTokenTests {
+        @Test
+        @DisplayName("Should refresh token successfully with valid refresh token")
+        void shouldRefreshTokenSuccessfully() {
+            // Arrange
+            String refreshTokenPlain = "valid-refresh-token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+            UUID userId = UUID.randomUUID();
+            UUID companyId = UUID.randomUUID();
+
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setUserId(userId);
+            tokenEntity.setCompanyId(companyId);
+            tokenEntity.setTokenHash(refreshTokenHash);
+            tokenEntity.setRevoked(false);
+            tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            User user = new User();
+            user.setId(userId);
+
+            UserCompany userCompany = new UserCompany();
+            userCompany.setUserId(userId);
+            userCompany.setCompanyId(companyId);
+            userCompany.setStatus(UserCompanyStatus.ACTIVE);
+            userCompany.setRole(UserCompanyRole.ADMIN);
+
+            String newJwt = "new.jwt.token";
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(userCompanyRepository.findByUserIdAndCompanyId(userId, companyId)).thenReturn(Optional.of(userCompany));
+            when(jwtService.generateToken(user, companyId, "ADMIN")).thenReturn(newJwt);
+            when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+            RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
+
+            // Act
+            RefreshTokenResponse response = authService.refreshAuthToken(request);
+
+            // Assert
+            assertNotNull(response);
+            assertEquals(newJwt, response.authToken());
+            assertNotNull(response.refreshToken());
+
+            assertTrue(tokenEntity.isRevoked());
+
+            verify(refreshTokenRepository, times(2)).save(any());
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when refresh token is invalid")
+        void shouldThrowWhenRefreshTokenIsInvalid() {
+            String refreshTokenPlain = "invalid-token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.empty());
+
+            RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class,
+                    () -> authService.refreshAuthToken(request));
+
+            assertEquals("Invalid refresh token", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when refresh token is revoked")
+        void shouldThrowWhenRefreshTokenIsRevoked() {
+            String refreshTokenPlain = "revoked-token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setRevoked(true);
+            tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+
+            RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class,
+                    () -> authService.refreshAuthToken(request));
+
+            assertEquals("Refresh token expired or revoked", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when refresh token is expired")
+        void shouldThrowWhenRefreshTokenIsExpired() {
+            String refreshTokenPlain = "expired-token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setRevoked(false);
+            tokenEntity.setExpiresAt(Instant.now().minus(1, ChronoUnit.DAYS));
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+
+            RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class,
+                    () -> authService.refreshAuthToken(request));
+
+            assertEquals("Refresh token expired or revoked", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when user not found")
+        void shouldThrowWhenUserNotFound() {
+            String refreshTokenPlain = "token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+            UUID userId = UUID.randomUUID();
+
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setUserId(userId);
+            tokenEntity.setRevoked(false);
+            tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+            RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class,
+                    () -> authService.refreshAuthToken(request));
+
+            assertEquals("Invalid refresh token or user", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when user not affiliated to company")
+        void shouldThrowWhenUserNotAffiliated() {
+            String refreshTokenPlain = "token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+            UUID userId = UUID.randomUUID();
+            UUID companyId = UUID.randomUUID();
+            User user = new User();
+            user.setId(userId);
+
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setUserId(userId);
+            tokenEntity.setCompanyId(companyId);
+            tokenEntity.setRevoked(false);
+            tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(userCompanyRepository.findByUserIdAndCompanyId(userId, companyId)).thenReturn(Optional.empty());
+
+            RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class,
+                    () -> authService.refreshAuthToken(request));
+
+            assertEquals("Not affiliated to this company", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when user not active in company")
+        void shouldThrowWhenUserNotActive() {
+            String refreshTokenPlain = "token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+            UUID userId = UUID.randomUUID();
+            UUID companyId = UUID.randomUUID();
+
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setUserId(userId);
+            tokenEntity.setCompanyId(companyId);
+            tokenEntity.setRevoked(false);
+            tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            User user = new User();
+            user.setId(userId);
+
+            UserCompany userCompany = new UserCompany();
+            userCompany.setUserId(userId);
+            userCompany.setCompanyId(companyId);
+            userCompany.setStatus(UserCompanyStatus.DISABLED);
+            userCompany.setRole(UserCompanyRole.ADMIN);
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(userCompanyRepository.findByUserIdAndCompanyId(userId, companyId)).thenReturn(Optional.of(userCompany));
+
+            RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class,
+                    () -> authService.refreshAuthToken(request));
+
+            assertEquals("Not active in this company", ex.getMessage());
         }
     }
 }
