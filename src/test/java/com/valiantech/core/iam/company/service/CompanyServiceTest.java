@@ -27,7 +27,7 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class CompanyServiceUnitTest {
+class CompanyServiceTest {
 
     @Mock CompanyRepository companyRepository;
     @Mock UserService userService;

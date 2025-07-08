@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class CompanyControllerUnitTest {
+class CompanyControllerTest {
 
     @Mock
     CompanyService companyService;
