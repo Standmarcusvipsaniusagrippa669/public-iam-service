@@ -1,23 +1,23 @@
 package com.valiantech.core.iam.auth.controller;
 
-import com.valiantech.core.iam.auth.dto.LoginRequest;
-import com.valiantech.core.iam.auth.dto.AssociatedCompanies;
-import com.valiantech.core.iam.auth.dto.LoginResponse;
-import com.valiantech.core.iam.auth.dto.TokenRequest;
+import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.service.AuthService;
 import com.valiantech.core.iam.exception.ErrorResponse;
 import com.valiantech.core.iam.ratelimit.RateLimit;
+import com.valiantech.core.iam.user.model.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Controlador REST encargado de la autenticación de usuarios y la obtención de empresas asociadas.
@@ -297,5 +297,76 @@ public class AuthController {
     @RateLimit(capacity = 5, refill = 10)
     public ResponseEntity<LoginResponse> loginWithCompany(@RequestBody TokenRequest request) {
         return ResponseEntity.ok(authService.loginWithCompany(request));
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(
+            summary = "Obtener los datos del usuario autenticado y el contexto actual",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Sesión actual",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "Ejemplo whoami",
+                                            value = """
+                                                    {
+                                                        "userId": "32b01416-4c3b-4ad2-9f99-49c4cf68cf3c",
+                                                        "fullName": "Juan Pérez",
+                                                        "email": "juan.perez@empresa.com",
+                                                        "emailValidated": true,
+                                                        "status": "ACTIVE",
+                                                        "companyId": "caf50e5e-885a-4a2b-8c4a-c51e43a6711a",
+                                                        "companyName": "Empresa S.A.",
+                                                        "role": "ADMIN"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "429",
+                            description = "Muchas solicitudes",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "Too Many Request",
+                                            summary = "Se realizo muchas solicitudes en un corto periodo de tiempo",
+                                            value = """
+                                                      {
+                                                          "error": "Too Many Requests"
+                                                      }
+                                                    """
+                                    )
+                            )
+                    ),
+            }
+    )
+    @GetMapping("/whoami")
+    public ResponseEntity<WhoamiResponse> whoami() {
+        // 1. Extraer info desde el contexto de seguridad/JWT
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        var details = (Map<String, Object>) auth.getDetails();
+
+        UUID userId = ((User) auth.getPrincipal()).getId();
+        String email = (String) details.get("email");
+        String fullName = (String) details.get("fullName");
+        boolean emailValidated = (boolean) details.getOrDefault("emailValidated", false);
+        String status = (String) details.getOrDefault("status", "unknown");
+        UUID companyId = UUID.fromString((String) details.get("companyId"));
+        String companyName = (String) details.getOrDefault("companyName", "unknown");
+        String role = (String) details.get("role");
+
+        return ResponseEntity.ok(new WhoamiResponse(
+                userId,
+                fullName,
+                email,
+                emailValidated,
+                status,
+                companyId,
+                companyName,
+                role
+        ));
     }
 }
