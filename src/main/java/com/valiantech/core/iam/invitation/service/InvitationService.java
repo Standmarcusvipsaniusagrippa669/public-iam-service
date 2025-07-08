@@ -72,7 +72,7 @@ public class InvitationService {
         UserInvitation invitation = invitationRepository.findByInvitationToken(request.token())
                 .orElseThrow(() -> new NotFoundException("Invitation not found."));
 
-        if (InvitationStatus.PENDING.equals(invitation.getStatus()) || InvitationStatus.ACCEPTED.equals(invitation.getStatus())) {
+        if (!InvitationStatus.PENDING.equals(invitation.getStatus())) {
             throw new ConflictException("Invitation not valid.");
         }
         if (invitation.getExpiresAt().isBefore(Instant.now())) {
