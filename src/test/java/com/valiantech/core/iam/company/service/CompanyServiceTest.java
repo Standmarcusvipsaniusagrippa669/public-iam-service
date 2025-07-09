@@ -2,18 +2,21 @@ package com.valiantech.core.iam.company.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.valiantech.core.iam.audit.service.UserAuditLogService;
 import com.valiantech.core.iam.company.model.Company;
 import com.valiantech.core.iam.company.model.CompanyStatus;
 import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.company.dto.*;
 import com.valiantech.core.iam.exception.ConflictException;
 import com.valiantech.core.iam.exception.NotFoundException;
+import com.valiantech.core.iam.security.SecurityUtil;
 import com.valiantech.core.iam.user.dto.CreateUserRequest;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import com.valiantech.core.iam.user.model.UserStatus;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
 import com.valiantech.core.iam.user.service.UserService;
 import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
+import com.valiantech.core.iam.util.ClientInfoService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,6 +35,10 @@ class CompanyServiceTest {
     @Mock CompanyRepository companyRepository;
     @Mock UserService userService;
     @Mock UserCompanyService userCompanyService;
+    @Mock
+    UserAuditLogService userAuditLogService;
+    @Mock
+    ClientInfoService clientInfoService;
     @InjectMocks
     CompanyService service;
 
@@ -89,6 +96,11 @@ class CompanyServiceTest {
 
             var userResponse = new UserResponse(UUID.randomUUID(), "Owner Name", "owner@email.com", false, UserStatus.ACTIVE, null, null, null);
             when(userService.registerActiveUser(ownerData)).thenReturn(userResponse);
+
+            doNothing().when(userAuditLogService).logAsync(any());
+            when(clientInfoService.getClientIp()).thenReturn("0.0.0.0");
+            when(clientInfoService.getCookies()).thenReturn(null);
+            when(clientInfoService.getUserAgent()).thenReturn("Test");
 
             CompanyResponse response = service.onboarding(request);
 
@@ -150,11 +162,20 @@ class CompanyServiceTest {
             when(companyRepository.findById(companyId)).thenReturn(Optional.of(company));
             when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            CompanyResponse response = service.updateCompany(companyId, request);
+            doNothing().when(userAuditLogService).logAsync(any());
+            when(clientInfoService.getClientIp()).thenReturn("0.0.0.0");
+            when(clientInfoService.getCookies()).thenReturn(null);
+            when(clientInfoService.getUserAgent()).thenReturn("Test");
 
-            assertEquals("Nuevo Nombre", response.businessName());
-            assertEquals(companyId, response.id());
-            verify(companyRepository).save(company);
+            try (var mocked = mockStatic(SecurityUtil.class)) {
+                mocked.when(SecurityUtil::getUserIdFromContext).thenReturn(UUID.randomUUID());
+                CompanyResponse response = service.updateCompany(companyId, request);
+
+                assertEquals("Nuevo Nombre", response.businessName());
+                assertEquals(companyId, response.id());
+                verify(companyRepository).save(company);
+            }
+
         }
 
         @Test
