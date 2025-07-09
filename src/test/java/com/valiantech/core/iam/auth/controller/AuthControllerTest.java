@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -107,6 +108,7 @@ class AuthControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/v1/auth/whoami")
     class WhoamiTest {
         @Test
         @DisplayName("Debe retornar 200 y los datos del usuario autenticado si el contexto es válido")
@@ -242,6 +244,48 @@ class AuthControllerTest {
             UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> controller.refreshToken(req));
             assertTrue(ex.getMessage().contains("Invalid refresh token or user"));
             verify(authService).refreshAuthToken(req);
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/auth/logout")
+    class LogoutTest {
+        @Test
+        @DisplayName("Should return LogoutResponse wrapped in ResponseEntity when logout is called")
+        void shouldReturnLogoutResponseOnLogout() {
+            // Arrange
+            LogoutRequest request = new LogoutRequest("valid-refresh-token");
+            LogoutResponse expectedResponse = new LogoutResponse("Logout successful");
+
+            when(authService.logout(any(LogoutRequest.class))).thenReturn(expectedResponse);
+
+            // Act
+            ResponseEntity<LogoutResponse> responseEntity = controller.logout(request);
+
+            // Assert
+            assertNotNull(responseEntity);
+            assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+            assertEquals(expectedResponse, responseEntity.getBody());
+
+            verify(authService, times(1)).logout(request);
+        }
+
+        @Test
+        @DisplayName("Should propagate UnauthorizedException thrown by AuthService.logout")
+        void shouldPropagateUnauthorizedException() {
+            // Arrange
+            LogoutRequest request = new LogoutRequest("invalid-refresh-token");
+
+            when(authService.logout(any(LogoutRequest.class)))
+                    .thenThrow(new UnauthorizedException("Invalid refresh token"));
+
+            // Act & Assert
+            UnauthorizedException thrown = assertThrows(UnauthorizedException.class, () -> {
+                controller.logout(request);
+            });
+
+            assertEquals("Invalid refresh token", thrown.getMessage());
+            verify(authService, times(1)).logout(request);
         }
     }
 

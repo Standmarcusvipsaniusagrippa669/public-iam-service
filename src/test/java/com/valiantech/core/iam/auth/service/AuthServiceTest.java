@@ -430,4 +430,84 @@ class AuthServiceTest {
             assertEquals("Not active in this company", ex.getMessage());
         }
     }
+
+    @Nested
+    class LogoutTest {
+        @Test
+        @DisplayName("Should revoke refresh token successfully on logout")
+        void shouldRevokeRefreshTokenSuccessfully() {
+            // Arrange
+            String refreshTokenPlain = "valid-refresh-token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setRevoked(false);
+            tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+            LogoutRequest request = new LogoutRequest(refreshTokenPlain);
+
+            // Act
+            LogoutResponse response = authService.logout(request);
+
+            // Assert
+            assertNotNull(response);
+            assertEquals("Logout successful", response.message());
+            assertTrue(tokenEntity.isRevoked());
+
+            verify(refreshTokenRepository).save(tokenEntity);
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when refresh token is invalid")
+        void shouldThrowWhenRefreshTokenIsInvalid() {
+            String refreshTokenPlain = "invalid-token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.empty());
+
+            LogoutRequest request = new LogoutRequest(refreshTokenPlain);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.logout(request));
+            assertEquals("Invalid refresh token", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when refresh token is revoked")
+        void shouldThrowWhenRefreshTokenIsRevoked() {
+            String refreshTokenPlain = "revoked-token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setRevoked(true);
+            tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+
+            LogoutRequest request = new LogoutRequest(refreshTokenPlain);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.logout(request));
+            assertEquals("Refresh token expired or revoked", ex.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when refresh token is expired")
+        void shouldThrowWhenRefreshTokenIsExpired() {
+            String refreshTokenPlain = "expired-token";
+            String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+
+            RefreshToken tokenEntity = new RefreshToken();
+            tokenEntity.setRevoked(false);
+            tokenEntity.setExpiresAt(Instant.now().minus(1, ChronoUnit.DAYS));
+
+            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+
+            LogoutRequest request = new LogoutRequest(refreshTokenPlain);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.logout(request));
+            assertEquals("Refresh token expired or revoked", ex.getMessage());
+        }
+    }
 }
