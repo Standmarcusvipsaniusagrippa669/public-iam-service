@@ -8,6 +8,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Stream;
 
+import com.valiantech.core.iam.audit.service.UserAuditLogService;
 import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.model.*;
 import com.valiantech.core.iam.auth.repository.LoginTicketRepository;
@@ -21,6 +22,7 @@ import com.valiantech.core.iam.user.repository.UserRepository;
 import com.valiantech.core.iam.usercompany.model.*;
 
 import com.valiantech.core.iam.usercompany.repository.UserCompanyRepository;
+import com.valiantech.core.iam.util.ClientInfoService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -46,6 +48,10 @@ class AuthServiceTest {
     LoginTicketRepository loginTicketRepository;
     @Mock
     RefreshTokenRepository refreshTokenRepository;
+    @Mock
+    UserAuditLogService userAuditLogService;
+    @Mock
+    ClientInfoService clientInfoService;
     @InjectMocks AuthService authService;
 
     // Datos comunes
@@ -532,6 +538,10 @@ class AuthServiceTest {
             when(passwordEncoder.encode(request.newPassword())).thenReturn("hashedNewPass");
             when(userRepository.save(user)).thenReturn(user);
             doNothing().when(refreshTokenRepository).revokeAllByUserId(userId);
+            doNothing().when(userAuditLogService).logAsync(any());
+            when(clientInfoService.getClientIp()).thenReturn("0.0.0.0");
+            when(clientInfoService.getCookies()).thenReturn(null);
+            when(clientInfoService.getUserAgent()).thenReturn("Test");
 
             // Act
             ChangePasswordResponse response = authService.changePassword(userId, request);
@@ -575,6 +585,10 @@ class AuthServiceTest {
 
             when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())).thenReturn(false);
+            doNothing().when(userAuditLogService).logAsync(any());
+            when(clientInfoService.getClientIp()).thenReturn("0.0.0.0");
+            when(clientInfoService.getCookies()).thenReturn(null);
+            when(clientInfoService.getUserAgent()).thenReturn("Test");
 
             UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> {
                 authService.changePassword(userId, request);
