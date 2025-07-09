@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -575,6 +577,31 @@ public class AuthController {
     @RateLimit(capacity = 10, refill = 10)
     public ResponseEntity<LogoutResponse> logout(@RequestBody LogoutRequest request) {
         LogoutResponse response = authService.logout(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Endpoint REST para que un usuario autenticado cambie su contraseña.
+     * <p>
+     * Recibe en el cuerpo de la petición un {@link ChangePasswordRequest} con la contraseña actual y la nueva.
+     * El usuario se obtiene directamente del contexto de seguridad mediante {@code @AuthenticationPrincipal}.
+     * </p>
+     * <p>
+     * Llama al servicio para realizar las validaciones y actualización de la contraseña.
+     * </p>
+     *
+     * @param user    el usuario autenticado extraído del token JWT.
+     * @param request objeto que contiene la contraseña actual y la nueva contraseña.
+     * @return un {@link ResponseEntity} con un {@link ChangePasswordResponse} confirmando el éxito del cambio.
+     * @throws com.valiantech.core.iam.exception.UnauthorizedException si el usuario no existe o la contraseña actual es incorrecta.
+     */
+    @PostMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ChangePasswordResponse> changePassword(
+            @AuthenticationPrincipal User user,
+            @RequestBody ChangePasswordRequest request) {
+
+        ChangePasswordResponse response = authService.changePassword(user.getId(), request);
         return ResponseEntity.ok(response);
     }
 }

@@ -274,6 +274,40 @@ public class AuthService {
     }
 
     /**
+     * Cambia la contraseña de un usuario validando la contraseña actual y aplicando políticas de seguridad.
+     * <p>
+     * Valida que el usuario exista y que la contraseña actual coincida con la almacenada.
+     * Luego codifica la nueva contraseña y actualiza el registro en base de datos.
+     * Finalmente, revoca todos los refresh tokens activos para ese usuario para requerir un nuevo login.
+     * </p>
+     *
+     * @param userId  UUID del usuario cuyo password se desea cambiar.
+     * @param request objeto con la contraseña actual y la nueva contraseña.
+     * @return un {@link ChangePasswordResponse} confirmando que el cambio fue exitoso y que se requiere nuevo login.
+     * @throws UnauthorizedException si el usuario no existe o la contraseña actual es incorrecta.
+     */
+    @Transactional
+    public ChangePasswordResponse changePassword(UUID userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new UnauthorizedException("Current password is incorrect");
+        }
+
+        // Aquí validar reglas de seguridad para nueva contraseña (longitud, complejidad...)
+
+        String newPasswordHash = passwordEncoder.encode(request.newPassword());
+        user.setPasswordHash(newPasswordHash);
+        userRepository.save(user);
+
+        refreshTokenRepository.revokeAllByUserId(userId);
+
+        return new ChangePasswordResponse("Password changed successfully. New login required.");
+    }
+
+
+    /**
      * Guarda un nuevo refresh token en la base de datos.
      * <p>
      * Calcula el hash SHA-256 del token plano para almacenamiento seguro,
