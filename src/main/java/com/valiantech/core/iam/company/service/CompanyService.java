@@ -1,15 +1,22 @@
 package com.valiantech.core.iam.company.service;
 
+import com.valiantech.core.iam.audit.model.AuditAction;
+import com.valiantech.core.iam.audit.model.AuditLogEntry;
+import com.valiantech.core.iam.audit.model.Metadata;
+import com.valiantech.core.iam.audit.model.ResourceType;
+import com.valiantech.core.iam.audit.service.UserAuditLogService;
 import com.valiantech.core.iam.company.dto.*;
 import com.valiantech.core.iam.company.model.Company;
 import com.valiantech.core.iam.company.model.CompanyStatus;
 import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.ConflictException;
 import com.valiantech.core.iam.exception.NotFoundException;
+import com.valiantech.core.iam.security.SecurityUtil;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import com.valiantech.core.iam.user.service.UserService;
 import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
+import com.valiantech.core.iam.util.ClientInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -55,6 +62,8 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
     private final UserService userService;
     private final UserCompanyService userCompanyService;
+    private final UserAuditLogService userAuditLogService;
+    private final ClientInfoService clientInfoService;
 
     /**
      * Registra una nueva empresa y su usuario owner (onboarding).
@@ -102,6 +111,20 @@ public class CompanyService {
                 UserCompanyRole.OWNER
         );
         log.debug("User owner associated to company with rut={}", request.company().rut());
+        userAuditLogService.logAsync(
+                AuditLogEntry.builder()
+                        .userId(userResponse.id())
+                        .companyId(userResponse.id())
+                        .targetUserId(null)
+                        .resourceType(ResourceType.COMPANY)
+                        .resourceId(company.getId())
+                        .action(AuditAction.ONBOARDING)
+                        .metadata(new Metadata("Onboarding of company successfully"))
+                        .cookies(clientInfoService.getCookies())
+                        .ipAddress(clientInfoService.getClientIp())
+                        .userAgent(clientInfoService.getUserAgent())
+                        .build()
+        );
         log.info("Onboarding of company rut {} end successfully", request.company().rut());
         return map(company);
     }
@@ -131,6 +154,21 @@ public class CompanyService {
         if (request.status() != null) entity.setStatus(request.status());
 
         entity.setUpdatedAt(Instant.now());
+
+        userAuditLogService.logAsync(
+                AuditLogEntry.builder()
+                        .userId(SecurityUtil.getUserIdFromContext())
+                        .companyId(id)
+                        .targetUserId(null)
+                        .resourceType(ResourceType.COMPANY)
+                        .resourceId(id)
+                        .action(AuditAction.COMPANY_UPDATED)
+                        .metadata(new Metadata("Successfully update company", request))
+                        .cookies(clientInfoService.getCookies())
+                        .ipAddress(clientInfoService.getClientIp())
+                        .userAgent(clientInfoService.getUserAgent())
+                        .build()
+        );
         log.info("Successfully update company with id {}", id);
         return map(companyRepository.save(entity));
     }
