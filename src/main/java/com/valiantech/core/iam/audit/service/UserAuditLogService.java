@@ -1,8 +1,8 @@
 package com.valiantech.core.iam.audit.service;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.valiantech.core.iam.audit.model.AuditAction;
 import com.valiantech.core.iam.audit.model.AuditLogEntry;
 import com.valiantech.core.iam.audit.model.UserAuditLog;
 import com.valiantech.core.iam.audit.repository.UserAuditLogRepository;
@@ -29,6 +29,7 @@ public class UserAuditLogService {
      */
     @Async
     public void logAsync(AuditLogEntry entry) {
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String metadataAsString = null;
         try {
             metadataAsString = objectMapper.writeValueAsString(entry.getMetadata());
@@ -36,7 +37,7 @@ public class UserAuditLogService {
             log.warn("Cannot write medatada as string: {}", ex.getMessage());
         }
 
-        UserAuditLog log = UserAuditLog.builder()
+        UserAuditLog record = UserAuditLog.builder()
                 .id(UUID.randomUUID())
                 .userId(entry.getUserId())
                 .companyId(entry.getCompanyId())
@@ -52,6 +53,6 @@ public class UserAuditLogService {
                 .createdAt(Instant.now())
                 .build();
 
-        repository.save(log);
+        repository.save(record);
     }
 }
