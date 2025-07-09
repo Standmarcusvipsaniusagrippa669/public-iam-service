@@ -239,6 +239,7 @@ class AuthServiceTest {
     }
 
     @Nested
+    @DisplayName("refreshAuthToken")
     class RefreshTokenTests {
         @Test
         @DisplayName("Should refresh token successfully with valid refresh token")
@@ -432,6 +433,7 @@ class AuthServiceTest {
     }
 
     @Nested
+    @DisplayName("logout")
     class LogoutTest {
         @Test
         @DisplayName("Should revoke refresh token successfully on logout")
@@ -508,6 +510,79 @@ class AuthServiceTest {
 
             UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.logout(request));
             assertEquals("Refresh token expired or revoked", ex.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("changePassword")
+    class ChangePasswordTest {
+        @Test
+        @DisplayName("Should change password successfully when current password matches")
+        void shouldChangePasswordSuccessfully() {
+            // Arrange
+            UUID userId = UUID.randomUUID();
+            ChangePasswordRequest request = new ChangePasswordRequest("oldPass", "newPass");
+
+            User user = new User();
+            user.setId(userId);
+            user.setPasswordHash("hashedOldPass");
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())).thenReturn(true);
+            when(passwordEncoder.encode(request.newPassword())).thenReturn("hashedNewPass");
+            when(userRepository.save(user)).thenReturn(user);
+            doNothing().when(refreshTokenRepository).revokeAllByUserId(userId);
+
+            // Act
+            ChangePasswordResponse response = authService.changePassword(userId, request);
+
+            // Assert
+            assertNotNull(response);
+            assertEquals("Password changed successfully. New login required.", response.message());
+            assertEquals("hashedNewPass", user.getPasswordHash());
+
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder).encode(request.newPassword());
+            verify(userRepository).save(user);
+            verify(refreshTokenRepository).revokeAllByUserId(userId);
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when user not found")
+        void shouldThrowWhenUserNotFound() {
+            UUID userId = UUID.randomUUID();
+            ChangePasswordRequest request = new ChangePasswordRequest("oldPass", "newPass");
+
+            when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> {
+                authService.changePassword(userId, request);
+            });
+
+            assertEquals("User not found", ex.getMessage());
+            verify(userRepository).findById(userId);
+        }
+
+        @Test
+        @DisplayName("Should throw UnauthorizedException when current password is incorrect")
+        void shouldThrowWhenCurrentPasswordIncorrect() {
+            UUID userId = UUID.randomUUID();
+            ChangePasswordRequest request = new ChangePasswordRequest("wrongOldPass", "newPass");
+
+            User user = new User();
+            user.setId(userId);
+            user.setPasswordHash("hashedOldPass");
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())).thenReturn(false);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> {
+                authService.changePassword(userId, request);
+            });
+
+            assertEquals("Current password is incorrect", ex.getMessage());
+            verify(userRepository).findById(userId);
+            verify(passwordEncoder).matches(request.currentPassword(), user.getPasswordHash());
         }
     }
 }

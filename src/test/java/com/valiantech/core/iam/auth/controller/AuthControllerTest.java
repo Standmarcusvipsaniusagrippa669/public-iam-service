@@ -289,4 +289,32 @@ class AuthControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("POST /api/v1/auth/change-password")
+    class ChangePasswordTest {
+        @Test
+        @DisplayName("Should return ChangePasswordResponse wrapped in ResponseEntity when changePassword is called")
+        void shouldReturnChangePasswordResponseOnChangePassword() {
+            // Arrange
+            User user = new User();
+            user.setId(UUID.randomUUID());
+
+            ChangePasswordRequest request = new ChangePasswordRequest("oldPass123", "newPass123");
+            ChangePasswordResponse expectedResponse = new ChangePasswordResponse("Password changed successfully. New login required.");
+
+            when(authService.changePassword(eq(user.getId()), any(ChangePasswordRequest.class)))
+                    .thenReturn(expectedResponse);
+
+            // Act
+            ResponseEntity<ChangePasswordResponse> responseEntity = controller.changePassword(user, request);
+
+            // Assert
+            assertNotNull(responseEntity);
+            assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+            assertEquals(expectedResponse, responseEntity.getBody());
+
+            verify(authService, times(1)).changePassword(user.getId(), request);
+        }
+    }
+
 }
