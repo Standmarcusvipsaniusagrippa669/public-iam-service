@@ -398,8 +398,8 @@ public class AuthController {
                                             name = "Success",
                                             value = """
                                                     {
-                                                      "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VySWQiLCJpYXQiOjE2ODk0NDQwMDAsImV4cCI6MTY4OTQ0NzYwMCwiY29tcGFueUlkIjoiZjQ1ZjQ2LTYxZTQtNDIzMi04ZDZmLTZhNTk0ZjE3OGVhMCIsInJvbGUiOiJBRE1JTiJ9.VP6kTzCphuRWq3cPt94PvPe8A6vDsEOigB-4XIaQDaI",
-                                                      "refresh_token": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                                                      "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VySWQiLCJpYXQiOjE2ODk0NDQwMDAsImV4cCI6MTY4OTQ0NzYwMCwiY29tcGFueUlkIjoiZjQ1ZjQ2LTYxZTQtNDIzMi04ZDZmLTZhNTk0ZjE3OGVhMCIsInJvbGUiOiJBRE1JTiJ9.VP6kTzCphuRWq3cPt94PvPe8A6vDsEOigB-4XIaQDaI",
+                                                      "refreshToken": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                                                     }
                                                     """
                                     )
