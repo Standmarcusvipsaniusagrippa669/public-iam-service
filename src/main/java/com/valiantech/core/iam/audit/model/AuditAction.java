@@ -1,0 +1,18 @@
+package com.valiantech.core.iam.audit.model;
+
+public enum AuditAction {
+    LOGIN_SUCCESS,
+    LOGIN_FAILURE,
+    LOGOUT,
+    PASSWORD_CHANGE,
+    ATTEMPT_CHANGE_PASSWORD,
+    USER_CREATED,
+    USER_UPDATED,
+    USER_DELETED,
+    ROLE_ASSIGNED,
+    ROLE_REVOKED,
+    REFRESH_TOKEN_ISSUED,
+    REFRESH_TOKEN_REVOKED,
+    INVITATION_SENT,
+    INVITATION_ACCEPTED,
+}
