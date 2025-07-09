@@ -56,5 +56,6 @@ valiantech:
 
 logging:
   level:
-    root: DEBUG
-    com.valiantech.core.iam: DEBUG
+    root: INFO
+    org.springframework: INFO
+    com.valiantech: DEBUG
