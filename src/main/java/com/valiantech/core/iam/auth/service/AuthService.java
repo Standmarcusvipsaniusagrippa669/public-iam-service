@@ -1,5 +1,10 @@
 package com.valiantech.core.iam.auth.service;
 
+import com.valiantech.core.iam.audit.model.AuditAction;
+import com.valiantech.core.iam.audit.model.AuditLogEntry;
+import com.valiantech.core.iam.audit.model.Metadata;
+import com.valiantech.core.iam.audit.model.ResourceType;
+import com.valiantech.core.iam.audit.service.UserAuditLogService;
 import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.model.LoginTicket;
 import com.valiantech.core.iam.auth.model.RefreshToken;
@@ -16,6 +21,7 @@ import com.valiantech.core.iam.user.repository.UserRepository;
 import com.valiantech.core.iam.usercompany.model.UserCompany;
 import com.valiantech.core.iam.usercompany.model.UserCompanyStatus;
 import com.valiantech.core.iam.usercompany.repository.UserCompanyRepository;
+import com.valiantech.core.iam.util.ClientInfoService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -68,7 +74,8 @@ public class AuthService {
     private final CompanyRepository companyRepository;
     private final LoginTicketRepository loginTicketRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-
+    private final UserAuditLogService userAuditLogService;
+    private final ClientInfoService clientInfoService;
     /**
      * Valida las credenciales y retorna las compañías activas asociadas al usuario, junto con un ticket temporal de login.
      *
@@ -83,6 +90,20 @@ public class AuthService {
         log.debug("User found with email={}", request.email());
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            userAuditLogService.logAsync(
+                    AuditLogEntry.builder()
+                            .userId(user.getId())
+                            .companyId(null)
+                            .targetUserId(user.getId())
+                            .resourceType(ResourceType.USER)
+                            .resourceId(user.getId())
+                            .action(AuditAction.LOGIN_FAILURE)
+                            .metadata(new Metadata("User password not match."))
+                            .cookies(clientInfoService.getCookies())
+                            .ipAddress(clientInfoService.getClientIp())
+                            .userAgent(clientInfoService.getUserAgent())
+                            .build()
+            );
             log.warn("User password not match for email={}", request.email());
             throw new UnauthorizedException(INVALID_CREDENTIALS);
         }
@@ -171,6 +192,20 @@ public class AuthService {
         loginTicketRepository.save(ticket);
         log.debug("Login ticket set used for email={}", request.email());
 
+        userAuditLogService.logAsync(
+                AuditLogEntry.builder()
+                        .userId(user.getId())
+                        .companyId(userCompany.getCompanyId())
+                        .targetUserId(user.getId())
+                        .resourceType(ResourceType.USER)
+                        .resourceId(user.getId())
+                        .action(AuditAction.LOGIN_SUCCESS)
+                        .metadata(new Metadata("Login successful"))
+                        .cookies(clientInfoService.getCookies())
+                        .ipAddress(clientInfoService.getClientIp())
+                        .userAgent(clientInfoService.getUserAgent())
+                        .build()
+        );
 
         log.info("Login successful for user {} in company {}", request.email(), request.companyId());
         return new LoginResponse(authToken, refreshTokenPlain, UserResponse.from(user), request.companyId(), role);
@@ -233,6 +268,20 @@ public class AuthService {
         String newRefreshTokenPlain = UUID.randomUUID().toString();
         saveRefreshToken(tokenEntity.getCompanyId(), newRefreshTokenPlain, user);
 
+        userAuditLogService.logAsync(
+                AuditLogEntry.builder()
+                        .userId(user.getId())
+                        .companyId(tokenEntity.getCompanyId())
+                        .targetUserId(user.getId())
+                        .resourceType(ResourceType.USER)
+                        .resourceId(user.getId())
+                        .action(AuditAction.REFRESH_TOKEN_ISSUED)
+                        .metadata(new Metadata("Success refresh token."))
+                        .cookies(clientInfoService.getCookies())
+                        .ipAddress(clientInfoService.getClientIp())
+                        .userAgent(clientInfoService.getUserAgent())
+                        .build()
+        );
         log.info("Success refresh token for refreshToken {}", request.refreshToken());
         return new RefreshTokenResponse(newAuthToken, newRefreshTokenPlain);
     }
@@ -268,7 +317,20 @@ public class AuthService {
         tokenEntity.setRevoked(true);
         refreshTokenRepository.save(tokenEntity);
 
-        // Aquí podrías registrar un evento en auditoría si tienes ese módulo
+        userAuditLogService.logAsync(
+                AuditLogEntry.builder()
+                        .userId(tokenEntity.getUserId())
+                        .companyId(tokenEntity.getCompanyId())
+                        .targetUserId(tokenEntity.getUserId())
+                        .resourceType(ResourceType.USER)
+                        .resourceId(tokenEntity.getId())
+                        .action(AuditAction.LOGOUT)
+                        .metadata(new Metadata("Logout successful"))
+                        .cookies(clientInfoService.getCookies())
+                        .ipAddress(clientInfoService.getClientIp())
+                        .userAgent(clientInfoService.getUserAgent())
+                        .build()
+        );
         log.info("Revoked refresh token successfully");
         return new LogoutResponse("Logout successful");
     }
@@ -292,6 +354,20 @@ public class AuthService {
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
 
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            userAuditLogService.logAsync(
+                    AuditLogEntry.builder()
+                            .userId(userId)
+                            .companyId(null)
+                            .targetUserId(userId)
+                            .resourceType(ResourceType.USER)
+                            .resourceId(userId)
+                            .action(AuditAction.ATTEMPT_CHANGE_PASSWORD)
+                            .metadata(new Metadata("Current password is incorrect"))
+                            .cookies(clientInfoService.getCookies())
+                            .ipAddress(clientInfoService.getClientIp())
+                            .userAgent(clientInfoService.getUserAgent())
+                            .build()
+            );
             throw new UnauthorizedException("Current password is incorrect");
         }
 
@@ -302,6 +378,21 @@ public class AuthService {
         userRepository.save(user);
 
         refreshTokenRepository.revokeAllByUserId(userId);
+
+        userAuditLogService.logAsync(
+                AuditLogEntry.builder()
+                        .userId(userId)
+                        .companyId(null)
+                        .targetUserId(userId)
+                        .resourceType(ResourceType.USER)
+                        .resourceId(userId)
+                        .action(AuditAction.PASSWORD_CHANGE)
+                        .metadata(new Metadata("Password changed successfully"))
+                        .cookies(clientInfoService.getCookies())
+                        .ipAddress(clientInfoService.getClientIp())
+                        .userAgent(clientInfoService.getUserAgent())
+                        .build()
+        );
 
         return new ChangePasswordResponse("Password changed successfully. New login required.");
     }
