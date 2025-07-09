@@ -481,4 +481,100 @@ public class AuthController {
         RefreshTokenResponse response = authService.refreshAuthToken(request);
         return ResponseEntity.ok(response);
     }
+
+
+    /**
+     * Endpoint REST para realizar el cierre de sesión (logout) de un usuario.
+     * <p>
+     * Recibe en el cuerpo de la petición un {@link LogoutRequest} que contiene el refresh token plano.
+     * Este endpoint revoca el refresh token para evitar su uso futuro en la generación de nuevos tokens de acceso.
+     * </p>
+     * <p>
+     * No requiere autenticación JWT previa, pero está protegido mediante limitación de tasa para prevenir abusos.
+     * </p>
+     *
+     * @param request objeto que contiene el refresh token que se desea revocar.
+     * @return un {@link ResponseEntity} con un {@link LogoutResponse} confirmando el éxito del cierre de sesión.
+     * @throws com.valiantech.core.iam.exception.UnauthorizedException si el refresh token es inválido, ya revocado o expirado.
+     */
+    @Operation(
+            summary = "Realizar el cierre de sesión (logout) de un usuario",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Refresh token success",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "Success",
+                                            value = """
+                                                    {
+                                                      "message": "Login Successful"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Validacion de datos",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "Invalid refresh token",
+                                                    summary = "El refresh token es invalido",
+                                                    value = """
+                                                      {
+                                                           "timestamp": "2025-07-08T03:25:11.460386425Z",
+                                                           "status": 401,
+                                                           "error": "Unauthorized",
+                                                           "message": "Invalid refresh token",
+                                                           "path": "/api/v1/auth/logout",
+                                                           "validationErrors": null
+                                                       }
+                                                    """
+                                            ),
+                                            @ExampleObject(
+                                                    name = "Refresh token expired or revoked",
+                                                    summary = "El refresh token a expirado o fue revocado",
+                                                    value = """
+                                                      {
+                                                           "timestamp": "2025-07-08T03:25:11.460386425Z",
+                                                           "status": 401,
+                                                           "error": "Unauthorized",
+                                                           "message": "Invalid refresh token",
+                                                           "path": "/api/v1/auth/logout",
+                                                           "validationErrors": null
+                                                       }
+                                                    """
+                                            )
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "429",
+                            description = "Muchas solicitudes",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "Too Many Request",
+                                            summary = "Se realizo muchas solicitudes en un corto periodo de tiempo",
+                                            value = """
+                                                      {
+                                                          "error": "Too Many Requests"
+                                                      }
+                                                    """
+                                    )
+                            )
+                    ),
+            }
+    )
+    @PostMapping("/logout")
+    @RateLimit(capacity = 10, refill = 10)
+    public ResponseEntity<LogoutResponse> logout(@RequestBody LogoutRequest request) {
+        LogoutResponse response = authService.logout(request);
+        return ResponseEntity.ok(response);
+    }
 }

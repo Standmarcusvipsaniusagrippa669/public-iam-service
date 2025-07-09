@@ -238,6 +238,42 @@ public class AuthService {
     }
 
     /**
+     * Realiza el cierre de sesión (logout) revocando el refresh token proporcionado.
+     * <p>
+     * Este método valida que el refresh token recibido sea válido, no esté expirado ni revocado,
+     * y lo marca como revocado para evitar su uso futuro en la generación de nuevos tokens.
+     * </p>
+     * <p>
+     * Registra logs en diferentes niveles para facilitar la trazabilidad y auditoría del proceso.
+     * </p>
+     *
+     * @param request objeto que contiene el refresh token plano enviado por el cliente para revocación.
+     * @return un {@link LogoutResponse} con mensaje de confirmación del cierre de sesión.
+     * @throws UnauthorizedException si el refresh token es inválido, ya revocado o expirado.
+     */
+    @Transactional
+    public LogoutResponse logout(LogoutRequest request) {
+        log.debug("Starting logout for refreshToken={}", request.refreshToken());
+        String refreshTokenPlain = request.refreshToken();
+        String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
+
+        RefreshToken tokenEntity = refreshTokenRepository.findByTokenHash(refreshTokenHash)
+                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+        log.debug("Refresh token fetch for refreshToken={}", request.refreshToken());
+        if (tokenEntity.isRevoked() || tokenEntity.getExpiresAt().isBefore(Instant.now())) {
+            log.warn("Refresh token expired or revoked for refreshToken={}", request.refreshToken());
+            throw new UnauthorizedException("Refresh token expired or revoked");
+        }
+
+        tokenEntity.setRevoked(true);
+        refreshTokenRepository.save(tokenEntity);
+
+        // Aquí podrías registrar un evento en auditoría si tienes ese módulo
+        log.info("Revoked refresh token successfully");
+        return new LogoutResponse("Logout successful");
+    }
+
+    /**
      * Guarda un nuevo refresh token en la base de datos.
      * <p>
      * Calcula el hash SHA-256 del token plano para almacenamiento seguro,
@@ -248,7 +284,6 @@ public class AuthService {
      * @param refreshTokenPlain el token plano generado para el cliente.
      * @param user              el usuario asociado al token.
      */
-
     private void saveRefreshToken(UUID companyId, String refreshTokenPlain, User user) {
         // Calcula el hash SHA-256 del refresh token para almacenarlo seguro
         String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
