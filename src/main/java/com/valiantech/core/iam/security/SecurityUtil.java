@@ -2,6 +2,7 @@ package com.valiantech.core.iam.security;
 
 import com.valiantech.core.iam.exception.ForbiddenException;
 import com.valiantech.core.iam.exception.GenericException;
+import com.valiantech.core.iam.user.model.User;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,11 @@ public class SecurityUtil {
         } catch (IllegalArgumentException e) {
             throw new ForbiddenException("Invalid companyId in token");
         }
+    }
+
+    public static UUID getUserIdFromContext() {
+        User principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return principal.getId();
     }
 
     public static String sha256Hex(String input) {
