@@ -76,6 +76,8 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserAuditLogService userAuditLogService;
     private final ClientInfoService clientInfoService;
+    private final UserLoginService userLoginService;
+
     /**
      * Valida las credenciales y retorna las compañías activas asociadas al usuario, junto con un ticket temporal de login.
      *
@@ -103,6 +105,14 @@ public class AuthService {
                             .ipAddress(clientInfoService.getClientIp())
                             .userAgent(clientInfoService.getUserAgent())
                             .build()
+            );
+            userLoginService.recordLoginAttempt(
+                    user.getId(),
+                    null,
+                    clientInfoService.getClientIp(),
+                    clientInfoService.getUserAgent(),
+                    false,
+                    "Password not match"
             );
             log.warn("User password not match for email={}", request.email());
             throw new UnauthorizedException(INVALID_CREDENTIALS);
@@ -207,6 +217,14 @@ public class AuthService {
                         .build()
         );
 
+        userLoginService.recordLoginAttempt(
+                user.getId(),
+                userCompany.getCompanyId(),
+                clientInfoService.getClientIp(),
+                clientInfoService.getUserAgent(),
+                true,
+                null
+        );
         log.info("Login successful for user {} in company {}", request.email(), request.companyId());
         return new LoginResponse(authToken, refreshTokenPlain, UserResponse.from(user), request.companyId(), role);
     }
