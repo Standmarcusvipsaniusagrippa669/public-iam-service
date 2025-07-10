@@ -1,6 +1,8 @@
 package com.valiantech.core.iam.invitation.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.valiantech.core.iam.audit.service.UserAuditLogService;
 import com.valiantech.core.iam.company.dto.CompanyResponse;
 import com.valiantech.core.iam.company.model.CompanyStatus;
 import com.valiantech.core.iam.config.InvitationProperties;
@@ -17,6 +19,7 @@ import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
 import com.valiantech.core.iam.user.service.UserService;
 import com.valiantech.core.iam.company.service.CompanyService;
+import com.valiantech.core.iam.util.ClientInfoService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,7 +42,10 @@ class InvitationServiceTest {
     @Mock UserCompanyService userCompanyService;
     @Mock
     InvitationProperties invitationProperties;
-
+    @Mock
+    UserAuditLogService userAuditLogService;
+    @Mock
+    ClientInfoService clientInfoService;
     @InjectMocks
     InvitationService invitationService;
 
@@ -68,7 +74,10 @@ class InvitationServiceTest {
             // invitationProperties
             when(invitationProperties.getRegistrationUrlBase()).thenReturn("https://register.url/");
             when(invitationProperties.getTokenExpiryDays()).thenReturn(5);
-
+            doNothing().when(userAuditLogService).logAsync(any());
+            when(clientInfoService.getUserAgent()).thenReturn("Agent");
+            when(clientInfoService.getClientIp()).thenReturn("0.0.0.0");
+            when(clientInfoService.getCookies()).thenReturn("");
             UserInvitation savedInvitation = UserInvitation.builder()
                     .id(UUID.randomUUID())
                     .invitedEmail(invitedEmail)
@@ -136,6 +145,10 @@ class InvitationServiceTest {
             UserResponse userResponse = new UserResponse(userId, "Usuario Nuevo", invitedEmail, true, null, null, null, null);
             when(userService.registerActiveUser(any())).thenReturn(userResponse);
             when(invitationRepository.save(any(UserInvitation.class))).thenReturn(invitation);
+            doNothing().when(userAuditLogService).logAsync(any());
+            when(clientInfoService.getUserAgent()).thenReturn("Agent");
+            when(clientInfoService.getClientIp()).thenReturn("0.0.0.0");
+            when(clientInfoService.getCookies()).thenReturn("");
 
             UserResponse response = invitationService.acceptAndRegister(req);
 
