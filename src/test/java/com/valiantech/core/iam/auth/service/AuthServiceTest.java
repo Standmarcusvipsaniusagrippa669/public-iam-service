@@ -52,6 +52,8 @@ class AuthServiceTest {
     UserAuditLogService userAuditLogService;
     @Mock
     ClientInfoService clientInfoService;
+    @Mock
+    UserLoginService userLoginService;
     @InjectMocks AuthService authService;
 
     // Datos comunes
