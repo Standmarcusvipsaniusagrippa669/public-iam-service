@@ -1,5 +1,10 @@
 package com.valiantech.core.iam.invitation.service;
 
+import com.valiantech.core.iam.audit.model.AuditAction;
+import com.valiantech.core.iam.audit.model.AuditLogEntry;
+import com.valiantech.core.iam.audit.model.Metadata;
+import com.valiantech.core.iam.audit.model.ResourceType;
+import com.valiantech.core.iam.audit.service.UserAuditLogService;
 import com.valiantech.core.iam.company.dto.CompanyResponse;
 import com.valiantech.core.iam.company.service.CompanyService;
 import com.valiantech.core.iam.config.InvitationProperties;
@@ -15,6 +20,7 @@ import com.valiantech.core.iam.user.service.UserService;
 import com.valiantech.core.iam.usercompany.model.UserCompany;
 import com.valiantech.core.iam.usercompany.model.UserCompanyRole;
 import com.valiantech.core.iam.usercompany.service.UserCompanyService;
+import com.valiantech.core.iam.util.ClientInfoService;
 import com.valiantech.core.iam.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -35,6 +41,8 @@ public class InvitationService {
     private final UserService userService;
     private final CompanyService companyService;
     private final UserCompanyService userCompanyService;
+    private final UserAuditLogService userAuditLogService;
+    private final ClientInfoService clientInfoService;
 
     private final InvitationProperties invitationProperties;
 
@@ -72,6 +80,20 @@ public class InvitationService {
                 .updatedAt(Instant.now())
                 .build();
         invitation = invitationRepository.save(invitation);
+        userAuditLogService.logAsync(
+                AuditLogEntry.builder()
+                        .userId(user.id())
+                        .companyId(companyId)
+                        .targetUserId(null)
+                        .resourceType(ResourceType.INVITATION)
+                        .resourceId(invitation.getId())
+                        .action(AuditAction.INVITATION_SENT)
+                        .metadata(new Metadata("Invitation create successfully"))
+                        .cookies(clientInfoService.getCookies())
+                        .ipAddress(clientInfoService.getClientIp())
+                        .userAgent(clientInfoService.getUserAgent())
+                        .build()
+        );
         log.info("Invitation create successfully for email {}", request.invitedEmail());
         return map(invitation);
     }
@@ -115,6 +137,20 @@ public class InvitationService {
         invitation.setAcceptedAt(Instant.now());
         invitation.setUpdatedAt(Instant.now());
         invitationRepository.save(invitation);
+        userAuditLogService.logAsync(
+                AuditLogEntry.builder()
+                        .userId(invitation.getInvitedBy())
+                        .companyId(invitation.getCompanyId())
+                        .targetUserId(userResponse.id())
+                        .resourceType(ResourceType.INVITATION)
+                        .resourceId(invitation.getId())
+                        .action(AuditAction.INVITATION_ACCEPTED)
+                        .metadata(new Metadata("Invitation was accepted successfully"))
+                        .cookies(clientInfoService.getCookies())
+                        .ipAddress(clientInfoService.getClientIp())
+                        .userAgent(clientInfoService.getUserAgent())
+                        .build()
+        );
         log.info("Invitation was accepted successfully with token {}", request.token());
         return userResponse;
     }
