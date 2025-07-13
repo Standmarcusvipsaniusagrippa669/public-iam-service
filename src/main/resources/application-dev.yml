@@ -30,6 +30,19 @@ spring:
     validate-on-migrate: true           # Valida que el historial sea coherente
     out-of-order: false                 # Rechaza migraciones fuera de orden (best practice)
 
+  mail:
+    host: ${SMTP_HOST}
+    port: 25
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+
 jwt:
   secret: ${JWT_SECRET_VALUE}
 
