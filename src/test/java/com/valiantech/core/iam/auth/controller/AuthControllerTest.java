@@ -2,6 +2,7 @@ package com.valiantech.core.iam.auth.controller;
 
 import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.service.AuthService;
+import com.valiantech.core.iam.auth.service.PasswordResetService;
 import com.valiantech.core.iam.exception.UnauthorizedException;
 import com.valiantech.core.iam.user.dto.UserResponse;
 import com.valiantech.core.iam.user.model.User;
@@ -28,6 +29,8 @@ class AuthControllerTest {
 
     @Mock
     AuthService authService;
+    @Mock
+    PasswordResetService passwordResetService;
 
     @InjectMocks
     AuthController controller;
@@ -314,6 +317,59 @@ class AuthControllerTest {
             assertEquals(expectedResponse, responseEntity.getBody());
 
             verify(authService, times(1)).changePassword(user.getId(), request);
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/auth/reset-password")
+    class ResetPasswordEndpointTests {
+
+        @Test
+        @DisplayName("Debe retornar 200 y mensaje de éxito si el reset es exitoso")
+        void shouldReturn200OnSuccess() {
+            ResetPasswordRequest req = new ResetPasswordRequest("token123", "Nuev0P@ss");
+
+            // No lanza excepción, por lo tanto es éxito
+            doNothing().when(passwordResetService).resetPassword(req);
+
+            var response = controller.resetPassword(req);
+
+            assertEquals(200, response.getStatusCode().value());
+            assertNotNull(response.getBody());
+            assertEquals("Password reset successfully", response.getBody().message());
+            verify(passwordResetService).resetPassword(req);
+        }
+
+        @Test
+        @DisplayName("Debe propagar UnauthorizedException si el reset falla por token inválido")
+        void shouldPropagateUnauthorizedExceptionOnInvalidToken() {
+            ResetPasswordRequest req = new ResetPasswordRequest("badtoken", "Nuev0P@ss");
+            doThrow(new UnauthorizedException("Invalid password reset token"))
+                    .when(passwordResetService).resetPassword(req);
+
+            UnauthorizedException ex = assertThrows(UnauthorizedException.class,
+                    () -> controller.resetPassword(req));
+            assertTrue(ex.getMessage().contains("Invalid password reset token"));
+            verify(passwordResetService).resetPassword(req);
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/auth/request-reset-password/{email}")
+    class RequestResetPasswordEndpointTests {
+
+        @Test
+        @DisplayName("Debe retornar 200 siempre con mensaje genérico si se solicita reset")
+        void shouldAlwaysReturn200OnRequestReset() {
+            String email = "correo@demo.com";
+            doNothing().when(passwordResetService).createPasswordResetRequest(email);
+
+            var response = controller.requestResetPassword(email);
+
+            assertEquals(200, response.getStatusCode().value());
+            assertNotNull(response.getBody());
+            assertEquals("The email will be sent if the email exists.", response.getBody().message());
+            verify(passwordResetService).createPasswordResetRequest(email);
         }
     }
 
