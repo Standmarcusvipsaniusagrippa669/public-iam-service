@@ -4,6 +4,7 @@ import com.valiantech.core.iam.auth.dto.ResetPasswordRequest;
 import com.valiantech.core.iam.auth.model.ResetPasswordStatus;
 import com.valiantech.core.iam.auth.model.UserPasswordReset;
 import com.valiantech.core.iam.auth.repository.UserPasswordResetRepository;
+import com.valiantech.core.iam.email.EmailSender;
 import com.valiantech.core.iam.exception.UnauthorizedException;
 import com.valiantech.core.iam.user.model.User;
 import com.valiantech.core.iam.user.repository.UserRepository;
@@ -41,6 +42,7 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final EmailSender emailSender;
 
     private static final int EXPIRATION_HOURS = 2;
 
@@ -65,6 +67,11 @@ public class PasswordResetService {
                 .requestedAt(Instant.now())
                 .expiresAt(Instant.now().plus(EXPIRATION_HOURS, ChronoUnit.HOURS))
                 .build();
+
+        emailSender.sendEmail(
+                user.get().getEmail(),
+                "Reset Password",
+                String.format("<b>token: %s</b>", token));
 
         passwordResetRepository.save(reset);
     }
