@@ -4,6 +4,7 @@ import com.valiantech.core.iam.auth.dto.ResetPasswordRequest;
 import com.valiantech.core.iam.auth.model.ResetPasswordStatus;
 import com.valiantech.core.iam.auth.model.UserPasswordReset;
 import com.valiantech.core.iam.auth.repository.UserPasswordResetRepository;
+import com.valiantech.core.iam.email.EmailSender;
 import com.valiantech.core.iam.exception.UnauthorizedException;
 import com.valiantech.core.iam.user.model.User;
 import com.valiantech.core.iam.user.repository.UserRepository;
@@ -29,6 +30,8 @@ class PasswordResetServiceTest {
     @Mock UserRepository userRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock RefreshTokenService refreshTokenService;
+    @Mock
+    EmailSender emailSender;
 
     @InjectMocks PasswordResetService passwordResetService;
 
@@ -46,7 +49,7 @@ class PasswordResetServiceTest {
         void shouldCreateResetRequestIfUserExists() {
             User user = User.builder().id(userId).email(email).build();
             when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-
+            doNothing().when(emailSender).sendEmail(anyString(), anyString(), anyString());
             passwordResetService.createPasswordResetRequest(email);
 
             verify(passwordResetRepository).save(argThat(reset ->
