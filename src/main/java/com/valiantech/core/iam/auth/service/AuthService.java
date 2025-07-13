@@ -9,7 +9,6 @@ import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.model.LoginTicket;
 import com.valiantech.core.iam.auth.model.RefreshToken;
 import com.valiantech.core.iam.auth.repository.LoginTicketRepository;
-import com.valiantech.core.iam.auth.repository.RefreshTokenRepository;
 import com.valiantech.core.iam.company.model.Company;
 import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.UnauthorizedException;
@@ -73,10 +72,10 @@ public class AuthService {
     private final UserCompanyRepository userCompanyRepository;
     private final CompanyRepository companyRepository;
     private final LoginTicketRepository loginTicketRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final UserAuditLogService userAuditLogService;
     private final ClientInfoService clientInfoService;
     private final UserLoginService userLoginService;
+    private final RefreshTokenService refreshTokenService;
 
     /**
      * Valida las credenciales y retorna las compañías activas asociadas al usuario, junto con un ticket temporal de login.
@@ -193,8 +192,7 @@ public class AuthService {
         log.debug("Auth token generate for email={}", request.email());
 
         // Genera el refresh token como UUID string
-        String refreshTokenPlain = UUID.randomUUID().toString();
-        saveRefreshToken(request.companyId(), refreshTokenPlain, user);
+        String refreshTokenPlain = refreshTokenService.saveNewRefreshToken(request.companyId(), user);
         log.debug("Refresh token generate for email={}", request.email());
 
         // Invalida el ticket
@@ -249,8 +247,7 @@ public class AuthService {
         String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
 
         // Buscar refresh token en BD
-        RefreshToken tokenEntity = refreshTokenRepository.findByTokenHash(refreshTokenHash)
-                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+        RefreshToken tokenEntity = refreshTokenService.findByTokenHash(refreshTokenHash);
         log.debug("Refresh token found for refreshToken={}", request.refreshToken());
 
         // Validar estado y expiración
@@ -279,12 +276,11 @@ public class AuthService {
 
         // Rotación de refresh tokens: revocar el antiguo y generar uno nuevo
         tokenEntity.setRevoked(true);
-        refreshTokenRepository.save(tokenEntity);
+        refreshTokenService.updateRefreshToken(tokenEntity);
         log.debug("Revoked previously refresh token for refreshToken={}", request.refreshToken());
 
 
-        String newRefreshTokenPlain = UUID.randomUUID().toString();
-        saveRefreshToken(tokenEntity.getCompanyId(), newRefreshTokenPlain, user);
+        String newRefreshTokenPlain = refreshTokenService.saveNewRefreshToken(tokenEntity.getCompanyId(), user);
 
         userAuditLogService.logAsync(
                 AuditLogEntry.builder()
@@ -324,8 +320,7 @@ public class AuthService {
         String refreshTokenPlain = request.refreshToken();
         String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
 
-        RefreshToken tokenEntity = refreshTokenRepository.findByTokenHash(refreshTokenHash)
-                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+        RefreshToken tokenEntity = refreshTokenService.findByTokenHash(refreshTokenHash);
         log.debug("Refresh token fetch for refreshToken={}", request.refreshToken());
         if (tokenEntity.isRevoked() || tokenEntity.getExpiresAt().isBefore(Instant.now())) {
             log.warn("Refresh token expired or revoked for refreshToken={}", request.refreshToken());
@@ -333,7 +328,7 @@ public class AuthService {
         }
 
         tokenEntity.setRevoked(true);
-        refreshTokenRepository.save(tokenEntity);
+        refreshTokenService.updateRefreshToken(tokenEntity);
 
         userAuditLogService.logAsync(
                 AuditLogEntry.builder()
@@ -395,7 +390,7 @@ public class AuthService {
         user.setPasswordHash(newPasswordHash);
         userRepository.save(user);
 
-        refreshTokenRepository.revokeAllByUserId(userId);
+        refreshTokenService.revokeAllByUserId(userId);
 
         userAuditLogService.logAsync(
                 AuditLogEntry.builder()
@@ -413,34 +408,5 @@ public class AuthService {
         );
 
         return new ChangePasswordResponse("Password changed successfully. New login required.");
-    }
-
-
-    /**
-     * Guarda un nuevo refresh token en la base de datos.
-     * <p>
-     * Calcula el hash SHA-256 del token plano para almacenamiento seguro,
-     * asigna metadatos como fechas de emisión y expiración, y marca el token como no revocado.
-     * </p>
-     *
-     * @param companyId         el UUID de la empresa asociada al token.
-     * @param refreshTokenPlain el token plano generado para el cliente.
-     * @param user              el usuario asociado al token.
-     */
-    private void saveRefreshToken(UUID companyId, String refreshTokenPlain, User user) {
-        // Calcula el hash SHA-256 del refresh token para almacenarlo seguro
-        String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
-
-        // Crea la entidad RefreshToken para persistirla
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setUserId(user.getId());
-        refreshToken.setCompanyId(companyId);
-        refreshToken.setTokenHash(refreshTokenHash);
-        refreshToken.setIssuedAt(Instant.now());
-        refreshToken.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS)); // Expira en 30 días (ajustable)
-        refreshToken.setRevoked(false);
-
-        // Guarda el refresh token en la base de datos
-        refreshTokenRepository.save(refreshToken);
     }
 }

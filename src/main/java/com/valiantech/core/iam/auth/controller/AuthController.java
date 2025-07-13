@@ -2,6 +2,7 @@ package com.valiantech.core.iam.auth.controller;
 
 import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.service.AuthService;
+import com.valiantech.core.iam.auth.service.PasswordResetService;
 import com.valiantech.core.iam.exception.ErrorResponse;
 import com.valiantech.core.iam.ratelimit.RateLimit;
 import com.valiantech.core.iam.user.model.User;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -66,7 +68,7 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService authService;
-
+    private final PasswordResetService passwordResetService;
     /**
      * Endpoint de inicio de sesión: valida credenciales y retorna las empresas asociadas al usuario.
      *
@@ -603,5 +605,27 @@ public class AuthController {
 
         ChangePasswordResponse response = authService.changePassword(user.getId(), request);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Endpoint público para resetear la contraseña usando token.
+     *
+     * @param request DTO con token de reset y nueva contraseña
+     * @return mensaje de éxito
+     */
+    @PostMapping("/reset-password")
+    @RateLimit(capacity = 5, refill = 5)
+    public ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
+        return ResponseEntity.ok(new ResetPasswordResponse("Password reset successfully"));
+    }
+
+    @PostMapping("/request-reset-password/{email}")
+    @RateLimit(capacity = 5, refill = 5)
+    public ResponseEntity<ResetPasswordResponse> requestResetPassword(
+            @PathVariable("email") String email
+    ) {
+        passwordResetService.createPasswordResetRequest(email);
+        return ResponseEntity.ok(new ResetPasswordResponse("The email will be sent if the email exists."));
     }
 }

@@ -47,13 +47,13 @@ class AuthServiceTest {
     @Mock
     LoginTicketRepository loginTicketRepository;
     @Mock
-    RefreshTokenRepository refreshTokenRepository;
-    @Mock
     UserAuditLogService userAuditLogService;
     @Mock
     ClientInfoService clientInfoService;
     @Mock
     UserLoginService userLoginService;
+    @Mock
+    RefreshTokenService refreshTokenService;
     @InjectMocks AuthService authService;
 
     // Datos comunes
@@ -226,7 +226,7 @@ class AuthServiceTest {
             String jwt = "jwt-authToken";
             when(jwtService.generateToken(userActive, companyIdActive, activeUserCompany.getRole().name())).thenReturn(jwt);
             when(loginTicketRepository.save(any(LoginTicket.class))).thenReturn(ticket);
-            when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(i -> i.getArgument(0));
+            when(refreshTokenService.saveNewRefreshToken(any(UUID.class), any(User.class))).thenReturn("token");
 
             TokenRequest req = new TokenRequest(email, companyIdActive, loginTicket);
 
@@ -276,11 +276,13 @@ class AuthServiceTest {
 
             String newJwt = "new.jwt.token";
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenReturn(tokenEntity);
             when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             when(userCompanyRepository.findByUserIdAndCompanyId(userId, companyId)).thenReturn(Optional.of(userCompany));
             when(jwtService.generateToken(user, companyId, "ADMIN")).thenReturn(newJwt);
-            when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+            when(refreshTokenService.saveNewRefreshToken(any(UUID.class), any(User.class))).thenReturn("token");
+            doNothing().when(refreshTokenService).updateRefreshToken(any());
+
 
             RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
 
@@ -294,7 +296,7 @@ class AuthServiceTest {
 
             assertTrue(tokenEntity.isRevoked());
 
-            verify(refreshTokenRepository, times(2)).save(any());
+            verify(refreshTokenService, times(1)).updateRefreshToken(any());
         }
 
         @Test
@@ -303,7 +305,9 @@ class AuthServiceTest {
             String refreshTokenPlain = "invalid-token";
             String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.empty());
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenThrow(
+                    new UnauthorizedException("Invalid refresh token")
+            );
 
             RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
 
@@ -323,7 +327,7 @@ class AuthServiceTest {
             tokenEntity.setRevoked(true);
             tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenReturn(tokenEntity);
 
             RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
 
@@ -343,7 +347,7 @@ class AuthServiceTest {
             tokenEntity.setRevoked(false);
             tokenEntity.setExpiresAt(Instant.now().minus(1, ChronoUnit.DAYS));
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenReturn(tokenEntity);
 
             RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
 
@@ -365,7 +369,7 @@ class AuthServiceTest {
             tokenEntity.setRevoked(false);
             tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenReturn(tokenEntity);
             when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
             RefreshTokenRequest request = new RefreshTokenRequest(refreshTokenPlain);
@@ -392,7 +396,7 @@ class AuthServiceTest {
             tokenEntity.setRevoked(false);
             tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenReturn(tokenEntity);
             when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             when(userCompanyRepository.findByUserIdAndCompanyId(userId, companyId)).thenReturn(Optional.empty());
 
@@ -427,7 +431,7 @@ class AuthServiceTest {
             userCompany.setStatus(UserCompanyStatus.DISABLED);
             userCompany.setRole(UserCompanyRole.ADMIN);
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenReturn(tokenEntity);
             when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             when(userCompanyRepository.findByUserIdAndCompanyId(userId, companyId)).thenReturn(Optional.of(userCompany));
 
@@ -454,8 +458,8 @@ class AuthServiceTest {
             tokenEntity.setRevoked(false);
             tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
-            when(refreshTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenReturn(tokenEntity);
+            doNothing().when(refreshTokenService).updateRefreshToken(any());
 
             LogoutRequest request = new LogoutRequest(refreshTokenPlain);
 
@@ -467,7 +471,7 @@ class AuthServiceTest {
             assertEquals("Logout successful", response.message());
             assertTrue(tokenEntity.isRevoked());
 
-            verify(refreshTokenRepository).save(tokenEntity);
+            verify(refreshTokenService).updateRefreshToken(any());
         }
 
         @Test
@@ -476,7 +480,9 @@ class AuthServiceTest {
             String refreshTokenPlain = "invalid-token";
             String refreshTokenHash = SecurityUtil.sha256Hex(refreshTokenPlain);
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.empty());
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenThrow(
+                    new UnauthorizedException("Invalid refresh token")
+            );
 
             LogoutRequest request = new LogoutRequest(refreshTokenPlain);
 
@@ -494,7 +500,7 @@ class AuthServiceTest {
             tokenEntity.setRevoked(true);
             tokenEntity.setExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenReturn(tokenEntity);
 
             LogoutRequest request = new LogoutRequest(refreshTokenPlain);
 
@@ -512,7 +518,7 @@ class AuthServiceTest {
             tokenEntity.setRevoked(false);
             tokenEntity.setExpiresAt(Instant.now().minus(1, ChronoUnit.DAYS));
 
-            when(refreshTokenRepository.findByTokenHash(refreshTokenHash)).thenReturn(Optional.of(tokenEntity));
+            when(refreshTokenService.findByTokenHash(refreshTokenHash)).thenReturn(tokenEntity);
 
             LogoutRequest request = new LogoutRequest(refreshTokenPlain);
 
@@ -539,7 +545,7 @@ class AuthServiceTest {
             when(passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())).thenReturn(true);
             when(passwordEncoder.encode(request.newPassword())).thenReturn("hashedNewPass");
             when(userRepository.save(user)).thenReturn(user);
-            doNothing().when(refreshTokenRepository).revokeAllByUserId(userId);
+            doNothing().when(refreshTokenService).revokeAllByUserId(userId);
             doNothing().when(userAuditLogService).logAsync(any());
             when(clientInfoService.getClientIp()).thenReturn("0.0.0.0");
             when(clientInfoService.getCookies()).thenReturn(null);
@@ -556,7 +562,7 @@ class AuthServiceTest {
             verify(userRepository).findById(userId);
             verify(passwordEncoder).encode(request.newPassword());
             verify(userRepository).save(user);
-            verify(refreshTokenRepository).revokeAllByUserId(userId);
+            verify(refreshTokenService).revokeAllByUserId(userId);
         }
 
         @Test
