@@ -13,6 +13,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Servicio utilitario para extraer información relevante del cliente HTTP,
+ * como IP, agente de usuario (User-Agent) y cookies en formato JSON.
+ * <ul>
+ *   <li>Soporta cabeceras estándar como X-Forwarded-For para detección real de IP tras proxy/reverse proxy.</li>
+ *   <li>Convierte las cookies a una lista serializada en JSON para trazabilidad o auditoría.</li>
+ *   <li>Si la serialización de cookies falla, retorna null y deja trazado en log.</li>
+ * </ul>
+ * <b>Notas:</b>
+ * <ul>
+ *   <li>El servicio está diseñado para usarse en capas de auditoría, seguridad y logging.</li>
+ *   <li>Depende de {@link HttpServletRequest} que debe estar correctamente inyectado en contexto web.</li>
+ * </ul>
+ * @author Ian Cardenas
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 @Log4j2

@@ -18,7 +18,20 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Servicio para manejar el flujo de resetear contraseña mediante token.
+ * Servicio encargado de gestionar el flujo de recuperación y restablecimiento de contraseñas mediante token seguro.
+ * <ul>
+ *   <li>Permite solicitar un token temporal de recuperación de contraseña.</li>
+ *   <li>Valida el token recibido, permite el cambio de clave y marca el token como usado.</li>
+ *   <li>Revoca todos los refresh tokens activos del usuario tras un reset exitoso por seguridad.</li>
+ *   <li>Tokens expirados, ya usados o inválidos provocan excepción {@link UnauthorizedException}.</li>
+ * </ul>
+ * <b>Notas:</b>
+ * <ul>
+ *   <li>El token expira por defecto en 2 horas.</li>
+ *   <li>No se informa si el usuario existe al solicitar reset (medida de privacidad).</li>
+ * </ul>
+ * @author Ian Cardenas
+ * @since 1.0
  */
 @Service
 @RequiredArgsConstructor

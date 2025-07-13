@@ -14,6 +14,22 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Servicio encargado de registrar de forma asíncrona los eventos de auditoría de usuarios en la plataforma.
+ * <ul>
+ *   <li>Convierte los metadatos del evento a JSON (ignorando nulos).</li>
+ *   <li>Guarda la acción de usuario en la base de datos junto con detalles como IP, agente, recurso, etc.</li>
+ *   <li>En caso de error al serializar los metadatos, continúa y registra el evento sin ellos (log de warning).</li>
+ *   <li>El método es asíncrono para no afectar el flujo principal de la aplicación.</li>
+ * </ul>
+ * <b>Notas:</b>
+ * <ul>
+ *   <li>El evento incluye marca de tiempo y toda la información relevante para trazabilidad.</li>
+ *   <li>Se recomienda auditar acciones críticas y sensibles para cumplimiento y debugging.</li>
+ * </ul>
+ * @author Ian Cardenas
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 @Log4j2
@@ -37,7 +53,7 @@ public class UserAuditLogService {
             log.warn("Cannot write medatada as string: {}", ex.getMessage());
         }
 
-        UserAuditLog record = UserAuditLog.builder()
+        repository.save(UserAuditLog.builder()
                 .id(UUID.randomUUID())
                 .userId(entry.getUserId())
                 .companyId(entry.getCompanyId())
@@ -51,8 +67,6 @@ public class UserAuditLogService {
                 .ipAddress(entry.getIpAddress())
                 .userAgent(entry.getUserAgent())
                 .createdAt(Instant.now())
-                .build();
-
-        repository.save(record);
+                .build());
     }
 }
