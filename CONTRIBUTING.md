@@ -50,5 +50,11 @@ Gracias por tu interés en contribuir al proyecto Valiantech IAM Core API. Para 
 
 # ¡Gracias por ayudar a mejorar Valiantech IAM Core API!
 
-**Valiantech © 2025**
+---
 
+**© 2025 Valian Technologies SpA. Todos los derechos reservados.**
+
+Este documento forma parte de un sistema informático de propiedad exclusiva de Valian Technologies SpA, empresa constituida en Chile.  
+Su uso, copia, distribución o reproducción total o parcial, para cualquier fin (incluyendo fines comerciales, educativos o de cualquier otra índole), está prohibido sin autorización expresa y por escrito de Valian Technologies SpA.
+
+---
