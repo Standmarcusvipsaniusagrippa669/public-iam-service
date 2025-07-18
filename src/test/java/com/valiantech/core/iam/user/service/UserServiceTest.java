@@ -64,12 +64,24 @@ class UserServiceUnitTest {
         }
 
         @Test
-        @DisplayName("Debe lanzar ConflictException si el email ya existe")
-        void shouldThrowConflictIfEmailExists() {
+        @DisplayName("Debe retornar el usuario existente si el email ya existe y no guardar de nuevo")
+        void shouldReturnExistingUserIfEmailExists() {
             CreateUserRequest req = new CreateUserRequest("Dup", email, password);
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(mock(User.class)));
+            User existingUser = User.builder()
+                    .id(UUID.randomUUID())
+                    .email(email)
+                    .fullName("Dup")
+                    .passwordHash("hash")
+                    .emailValidated(true)
+                    .status(UserStatus.ACTIVE)
+                    .build();
 
-            assertThrows(ConflictException.class, () -> service.registerActiveUser(req));
+            when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
+
+            UserResponse response = service.registerActiveUser(req);
+
+            assertEquals(existingUser.getEmail(), response.email());
+            assertEquals(existingUser.getFullName(), response.fullName());
             verify(userRepository, never()).save(any());
         }
     }
