@@ -67,6 +67,11 @@ valiantech:
     registration-url-base: http://localhost/register
     token-expiry-days: 7
 
+external-services:
+  companies:
+    base-url: http://host.docker.internal:8081
+    base-path: /api/v1/companies
+
 logging:
   level:
     root: INFO

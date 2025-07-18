@@ -66,6 +66,11 @@ valiantech:
     registration-url-base: ${INVITATION_REGISTRATION_URL_BASE}
     token-expiry-days: ${INVITATION_TOKEN_EXPIRY_DAYS}
 
+external-services:
+  companies:
+    base-url: http://localhost:8081 #http://host.docker.internal:8081
+    base-path: /api/v1/companies
+
 logging:
   level:
     root: INFO

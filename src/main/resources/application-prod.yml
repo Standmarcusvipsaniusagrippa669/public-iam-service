@@ -63,6 +63,11 @@ redis:
       - ${REDIS_NODE_ONE} # 192.168.1.10:7000
       - ${REDIS_NODE_TWO}
 
+external-services:
+  companies:
+    base-url: ${COMPANIES_BASE_URL} #http://host.docker.internal:8081
+    base-path: /api/v1/companies
+
 valiantech:
   invitation:
     registration-url-base: ${INVITATION_REGISTRATION_URL_BASE}

@@ -5,10 +5,9 @@ import com.valiantech.core.iam.audit.model.AuditLogEntry;
 import com.valiantech.core.iam.audit.model.Metadata;
 import com.valiantech.core.iam.audit.model.ResourceType;
 import com.valiantech.core.iam.audit.service.UserAuditLogService;
+import com.valiantech.core.iam.auth.service.JwtService;
+import com.valiantech.core.iam.clients.CompanyClient;
 import com.valiantech.core.iam.company.dto.*;
-import com.valiantech.core.iam.company.model.Company;
-import com.valiantech.core.iam.company.model.CompanyStatus;
-import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.ConflictException;
 import com.valiantech.core.iam.exception.NotFoundException;
 import com.valiantech.core.iam.security.SecurityUtil;
@@ -22,7 +21,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.Duration;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -59,11 +59,12 @@ import java.util.UUID;
 @Log4j2
 public class CompanyService {
 
-    private final CompanyRepository companyRepository;
     private final UserService userService;
     private final UserCompanyService userCompanyService;
     private final UserAuditLogService userAuditLogService;
     private final ClientInfoService clientInfoService;
+    private final JwtService jwtService;
+    private final CompanyClient companyClient;
 
     /**
      * Registra una nueva empresa y su usuario owner (onboarding).
@@ -76,29 +77,16 @@ public class CompanyService {
     @Transactional
     public CompanyResponse onboarding(CompanyOnboardingRequest request) {
         log.debug("Starting onboarding for company with rut={}", request.company().rut());
-        if (companyRepository.findByRut(request.company().rut()).isPresent()) {
+        String token = jwtService.generateServiceToken("company:read", Duration.ofMinutes(1));
+        CompanyResponse companyResponse = companyClient.findByRut(request.company().rut(), token);
+        if (!Objects.isNull(companyResponse)) {
             log.warn("Company with rut={} already exists", request.company().rut());
             throw new ConflictException("Company with this RUT already exists.");
         }
 
-        Company company = Company.builder()
-                .id(UUID.randomUUID())
-                .rut(request.company().rut())
-                .businessName(request.company().businessName())
-                .tradeName(request.company().tradeName())
-                .activity(request.company().activity())
-                .address(request.company().address())
-                .commune(request.company().commune())
-                .region(request.company().region())
-                .email(request.company().email())
-                .phone(request.company().phone())
-                .logoUrl(request.company().logoUrl())
-                .status(CompanyStatus.ACTIVE)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
 
-        company = companyRepository.save(company);
+        token = jwtService.generateServiceToken("company:create", Duration.ofMinutes(1));
+        CompanyResponse company = companyClient.createCompany(request.company(), token);
         log.debug("Company successfully saved");
 
         // 2. Crear usuario fundador (activo y validado)
@@ -107,7 +95,7 @@ public class CompanyService {
         // 3. Crear vínculo OWNER en user_companies
         userCompanyService.registerUserCompany(
                 userResponse.id(),
-                company.getId(),
+                company.id(),
                 UserCompanyRole.OWNER
         );
         log.debug("User owner associated to company with rut={}", request.company().rut());
@@ -117,7 +105,7 @@ public class CompanyService {
                         .companyId(userResponse.id())
                         .targetUserId(null)
                         .resourceType(ResourceType.COMPANY)
-                        .resourceId(company.getId())
+                        .resourceId(company.id())
                         .action(AuditAction.ONBOARDING)
                         .metadata(new Metadata("Onboarding of company successfully"))
                         .cookies(clientInfoService.getCookies())
@@ -126,7 +114,7 @@ public class CompanyService {
                         .build()
         );
         log.info("Onboarding of company rut {} end successfully", request.company().rut());
-        return map(company);
+        return company;
     }
 
     /**
@@ -139,21 +127,15 @@ public class CompanyService {
      */
     public CompanyResponse updateCompany(UUID id, UpdateCompanyRequest request) {
         log.debug("Starting updateCompany for id={}", id);
-        Company entity = companyRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Company not found."));
+        String token = jwtService.generateServiceTokenWithIdentifications(
+                SecurityUtil.getUserIdFromContext(),
+                id,
+                "company:update",
+                Duration.ofMinutes(1)
+        );
 
-        if (request.businessName() != null) entity.setBusinessName(request.businessName());
-        if (request.tradeName() != null) entity.setTradeName(request.tradeName());
-        if (request.activity() != null) entity.setActivity(request.activity());
-        if (request.address() != null) entity.setAddress(request.address());
-        if (request.commune() != null) entity.setCommune(request.commune());
-        if (request.region() != null) entity.setRegion(request.region());
-        if (request.email() != null) entity.setEmail(request.email());
-        if (request.phone() != null) entity.setPhone(request.phone());
-        if (request.logoUrl() != null) entity.setLogoUrl(request.logoUrl());
-        if (request.status() != null) entity.setStatus(request.status());
-
-        entity.setUpdatedAt(Instant.now());
+        CompanyResponse companyResponse =
+                companyClient.update(request, token);
 
         userAuditLogService.logAsync(
                 AuditLogEntry.builder()
@@ -170,7 +152,7 @@ public class CompanyService {
                         .build()
         );
         log.info("Successfully update company with id {}", id);
-        return map(companyRepository.save(entity));
+        return companyResponse;
     }
 
     /**
@@ -181,33 +163,16 @@ public class CompanyService {
      * @throws NotFoundException Si la empresa no existe.
      */
     public CompanyResponse getCompany(UUID id) {
-        Company entity = companyRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Company not found."));
-        return map(entity);
-    }
-
-    /**
-     * Transforma la entidad Company a DTO de respuesta.
-     *
-     * @param c Entidad Company.
-     * @return DTO de respuesta para la empresa.
-     */
-    private CompanyResponse map(Company c) {
-        return new CompanyResponse(
-                c.getId(),
-                c.getRut(),
-                c.getBusinessName(),
-                c.getTradeName(),
-                c.getActivity(),
-                c.getAddress(),
-                c.getCommune(),
-                c.getRegion(),
-                c.getEmail(),
-                c.getPhone(),
-                c.getLogoUrl(),
-                c.getStatus(),
-                c.getCreatedAt(),
-                c.getUpdatedAt()
+        String token = jwtService.generateServiceTokenWithIdentifications(
+                SecurityUtil.getUserIdFromContext(),
+                id,
+                "company:read",
+                Duration.ofMinutes(1)
         );
+        CompanyResponse response = companyClient.findMeCompany(token);
+        if (Objects.isNull(response)) {
+            throw new NotFoundException("Company not found.");
+        }
+        return response;
     }
 }
