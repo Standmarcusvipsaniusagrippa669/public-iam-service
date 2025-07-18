@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -30,9 +31,12 @@ public class UserService {
 
     public UserResponse registerActiveUser(CreateUserRequest request) {
         log.debug("Starting registerActiveUser for email={}", request.email());
-        checkEmailUnique(request.email());
-        log.debug("User email is unique for email={}", request.email());
-        User user = userRepository.save(buildUserEntity(request, UserStatus.ACTIVE, true));
+        User user = fetchUserIfExists(request.email());
+        if (Objects.nonNull(user)) {
+            log.info("User {} already exists", request.email());
+            return map(user);
+        }
+        user = userRepository.save(buildUserEntity(request, UserStatus.ACTIVE, true));
         log.info("User {} create successfully", request.email());
         return map(user);
     }
@@ -107,10 +111,8 @@ public class UserService {
                 .build();
     }
 
-    private void checkEmailUnique(String email) {
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new ConflictException("Email already registered");
-        }
+    private User fetchUserIfExists(String email) {
+        return userRepository.findByEmail(email).orElse(null);
     }
 
     private UserResponse map(User u) {

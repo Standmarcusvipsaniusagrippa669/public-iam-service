@@ -8,6 +8,8 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.time.temporal.ChronoUnit;
@@ -78,5 +80,33 @@ public class JwtService {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public String generateServiceToken(String scope, Duration ttl) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .claim("client_type", "service")
+                .claim("client_id", "iam-service")
+                .claim("scope", scope)
+                .setId(UUID.randomUUID().toString()) // jti: single use
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(now.plus(ttl)))
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)))
+                .compact();
+    }
+
+    public String generateServiceTokenWithIdentifications(UUID userId, UUID companyId, String scope, Duration ttl) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .claim("client_type", "service")
+                .claim("client_id", "iam-service")
+                .claim("user_id", userId)
+                .claim("company_id", companyId)
+                .claim("scope", scope)
+                .setId(UUID.randomUUID().toString()) // jti: single use
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(now.plus(ttl)))
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)))
+                .compact();
     }
 }
