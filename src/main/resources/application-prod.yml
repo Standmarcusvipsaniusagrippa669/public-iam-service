@@ -12,7 +12,7 @@ spring:
     url: ${DATASOURCE_JDBC_URL} # example: jdbc:postgresql://localhost:5432/iamdb
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: ${DATASOURCE_DRIVER_CLASS}
 
   jpa:
     hibernate:

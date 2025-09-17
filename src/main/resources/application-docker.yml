@@ -12,7 +12,7 @@ spring:
     url: ${DATASOURCE_JDBC_URL} # example: jdbc:postgresql://localhost:5432/iamdb
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: ${DATASOURCE_DRIVER_CLASS}
 
   jpa:
     hibernate:
@@ -23,7 +23,7 @@ spring:
         format_sql: true
 
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration   # Carpeta donde van tus scripts
     baseline-on-migrate: true           # Útil si la base ya tiene datos antes de usar Flyway
     clean-disabled: true                # Evita borrados accidentales (solo desactívalo en dev)
