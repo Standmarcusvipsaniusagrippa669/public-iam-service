@@ -78,5 +78,5 @@ logging:
     com.valiantech.core.iam: INFO
   sensitive-fields: ${LOGGING_SENSITIVE_FIELDS:password}
 
-
-
+security:
+  allow-origin: ${ALLOW_ORIGIN}
