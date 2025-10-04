@@ -77,3 +77,6 @@ logging:
     org.springframework: INFO
     com.valiantech.core.iam: DEBUG
   sensitive-fields: ${LOGGING_SENSITIVE_FIELDS:password}
+
+security:
+  allow-origin: ${ALLOW_ORIGIN}

@@ -78,3 +78,6 @@ logging:
     root: INFO
     com.valiantech.core.iam: INFO
   sensitive-fields: ${LOGGING_SENSITIVE_FIELDS}
+
+security:
+  allow-origin: ${ALLOW_ORIGIN}
