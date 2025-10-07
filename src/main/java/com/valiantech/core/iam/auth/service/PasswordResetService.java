@@ -4,7 +4,6 @@ import com.valiantech.core.iam.auth.dto.ResetPasswordRequest;
 import com.valiantech.core.iam.auth.model.ResetPasswordStatus;
 import com.valiantech.core.iam.auth.model.UserPasswordReset;
 import com.valiantech.core.iam.auth.repository.UserPasswordResetRepository;
-import com.valiantech.core.iam.email.EmailSender;
 import com.valiantech.core.iam.exception.UnauthorizedException;
 import com.valiantech.core.iam.user.model.User;
 import com.valiantech.core.iam.user.repository.UserRepository;
@@ -42,7 +41,7 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
-    private final EmailSender emailSender;
+    //private final EmailSender emailSender;
 
     private static final int EXPIRATION_HOURS = 2;
 
@@ -68,10 +67,10 @@ public class PasswordResetService {
                 .expiresAt(Instant.now().plus(EXPIRATION_HOURS, ChronoUnit.HOURS))
                 .build();
 
-        emailSender.sendEmail(
+        /*emailSender.sendEmail(
                 user.get().getEmail(),
                 "Reset Password",
-                String.format("<b>token: %s</b>", token));
+                String.format("<b>token: %s</b>", token));*/
 
         passwordResetRepository.save(reset);
     }
@@ -79,7 +78,7 @@ public class PasswordResetService {
     /**
      * Valida el token de reset y cambia la contraseña del usuario asociado.
      *
-     * @param ResetPasswordRequest Request cnn información para el reset del password
+     * @param request Request cnn información para el reset del password
      * @throws UnauthorizedException si token inválido, expirado o ya usado
      */
     @Transactional

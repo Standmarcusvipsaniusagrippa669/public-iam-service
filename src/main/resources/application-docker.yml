@@ -29,6 +29,8 @@ spring:
     clean-disabled: true                # Evita borrados accidentales (solo desactívalo en dev)
     validate-on-migrate: true           # Valida que el historial sea coherente
     out-of-order: false                 # Rechaza migraciones fuera de orden (best practice)
+    publishing:
+      enabled: false
 
   mail:
     host: ${SMTP_HOST}

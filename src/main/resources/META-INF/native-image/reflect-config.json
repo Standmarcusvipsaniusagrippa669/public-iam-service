@@ -1,0 +1,32 @@
+[
+  {
+    "name": "org.flywaydb.core.Flyway",
+    "methods": [
+      { "name": "migrate", "parameterTypes": [] }
+    ]
+  },
+  {
+    "name": "org.flywaydb.core.api.output.MigrateResult",
+    "allDeclaredFields": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.flywaydb.core.internal.publishing.PublishingConfigurationExtension",
+    "allDeclaredFields": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.flywaydb.core.extensibility.ConfigurationExtension",
+    "allDeclaredFields": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.flywaydb.core.internal.plugin.PluginRegister",
+    "allDeclaredFields": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true
+  }
+]
