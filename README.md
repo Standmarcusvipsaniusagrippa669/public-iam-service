@@ -71,9 +71,14 @@ SMTP_PASSWORD=tu_password_mailtrap
 
 ### 1. Construir la imagen Docker
 
+**JVM build**
 ```bash
 ./mvnw clean package -DskipTests
 docker build -t valiantech-iam-core .
+```
+**Compile build image**
+```bash
+./gradlew clean bootBuildImage
 ```
 
 ### 2. Ejecutar contenedores necesarios (PostgreSQL y Redis)
