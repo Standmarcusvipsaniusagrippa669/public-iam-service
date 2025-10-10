@@ -83,3 +83,12 @@ jacocoTestReport {
 		}))
 	}
 }
+
+bootBuildImage {
+    imageName = "valiantech/${project.name}:latest"
+    environment = [
+            "BP_JVM_VERSION"     : "21",
+            "BP_NATIVE_IMAGE"    : "false",
+            "BP_OCI_LABELS"      : "maintainer=valiantech"
+    ]
+}
