@@ -9,8 +9,8 @@ import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.model.LoginTicket;
 import com.valiantech.core.iam.auth.model.RefreshToken;
 import com.valiantech.core.iam.auth.repository.LoginTicketRepository;
-import com.valiantech.core.iam.clients.CompanyClient;
-import com.valiantech.core.iam.company.dto.CompanyResponse;
+import com.valiantech.core.iam.company.model.Company;
+import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.UnauthorizedException;
 import com.valiantech.core.iam.security.SecurityUtil;
 import com.valiantech.core.iam.user.dto.UserResponse;
@@ -71,7 +71,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final UserCompanyRepository userCompanyRepository;
-    private final CompanyClient companyClient;
+    private final CompanyRepository companyRepository;
     private final LoginTicketRepository loginTicketRepository;
     private final UserAuditLogService userAuditLogService;
     private final ClientInfoService clientInfoService;
@@ -136,19 +136,14 @@ public class AuthService {
 
         List<UserCompany> companies = userCompanyRepository.findByUserId(user.getId());
         log.debug("Companies found for email={}: {}", request.email(), companies.size());
-        String token = jwtService.generateServiceTokenWithIdentifications(
-                user.getId(),
-                null,
-                "company:read",
-                Duration.ofMinutes(1)
-        );
+
         List<CompanySummary> summaries = companies.stream()
                 .filter(uc -> uc.getStatus().equals(UserCompanyStatus.ACTIVE))
                 .map(uc -> {
-                    CompanyResponse company = companyClient.findById(uc.getCompanyId(), token);
+                    Company company = companyRepository.findById(uc.getCompanyId()).orElse(null);
                     return new CompanySummary(
                             uc.getCompanyId(),
-                            company != null ? company.businessName(): "",
+                            company != null ? company.getBusinessName(): "",
                             uc.getRole().name()
                     );
                 })

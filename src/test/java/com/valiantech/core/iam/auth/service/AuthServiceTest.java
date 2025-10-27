@@ -3,7 +3,6 @@ package com.valiantech.core.iam.auth.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -13,9 +12,8 @@ import com.valiantech.core.iam.audit.service.UserAuditLogService;
 import com.valiantech.core.iam.auth.dto.*;
 import com.valiantech.core.iam.auth.model.*;
 import com.valiantech.core.iam.auth.repository.LoginTicketRepository;
-import com.valiantech.core.iam.clients.CompanyClient;
-import com.valiantech.core.iam.company.dto.CompanyResponse;
 import com.valiantech.core.iam.company.model.*;
+import com.valiantech.core.iam.company.repository.CompanyRepository;
 import com.valiantech.core.iam.exception.UnauthorizedException;
 import com.valiantech.core.iam.security.SecurityUtil;
 import com.valiantech.core.iam.user.model.*;
@@ -44,7 +42,7 @@ class AuthServiceTest {
     @Mock
     UserCompanyRepository userCompanyRepository;
     @Mock
-    CompanyClient companyClient;
+    CompanyRepository companyRepository;
     @Mock
     LoginTicketRepository loginTicketRepository;
     @Mock
@@ -81,39 +79,17 @@ class AuthServiceTest {
             .status(UserStatus.DISABLED)
             .build();
 
-    final CompanyResponse companyActive = new CompanyResponse(
-            UUID.randomUUID(),
-            "11111111-1",
-            "Empresa SA",
-            "ESA",
-            "Actividades de programacion",
-            "La direccion",
-            "Santiago",
-            "Metropolitana",
-            "email@domain.cl",
-            "999999999",
-            null,
-            CompanyStatus.ACTIVE,
-            Instant.now(),
-            Instant.now()
-    );
+    final Company companyActive = Company.builder()
+            .id(companyIdActive)
+            .businessName("Empresa Activa")
+            .status(CompanyStatus.ACTIVE)
+            .build();
 
-    final CompanyResponse companyInactive = new CompanyResponse(
-            UUID.randomUUID(),
-            "11111111-1",
-            "Empresa SA",
-            "ESA",
-            "Actividades de programacion",
-            "La direccion",
-            "Santiago",
-            "Metropolitana",
-            "email@domain.cl",
-            "999999999",
-            null,
-            CompanyStatus.INACTIVE,
-            Instant.now(),
-            Instant.now()
-    );
+    final Company companyInactive = Company.builder()
+            .id(companyIdInactive)
+            .businessName("Empresa Inactiva")
+            .status(CompanyStatus.INACTIVE)
+            .build();
 
     final UserCompany activeUserCompany = UserCompany.builder()
             .userId(userId)
@@ -174,8 +150,8 @@ class AuthServiceTest {
 
             when(userCompanyRepository.findByUserId(userId)).thenReturn(
                     Arrays.asList(activeUserCompany, inactiveUserCompany));
-            when(companyClient.findById(any(), anyString())).thenReturn(companyActive);
-            when(jwtService.generateServiceTokenWithIdentifications(userId, null, "company:read", Duration.ofMinutes(1))).thenReturn("token");
+            when(companyRepository.findById(companyIdActive)).thenReturn(Optional.of(companyActive));
+
             LoginRequest request = new LoginRequest(email, password);
 
             // Act
@@ -185,13 +161,13 @@ class AuthServiceTest {
             verify(userRepository, times(1)).findByEmail(email);
             verify(passwordEncoder, times(1)).matches(password, encodedPassword);
             verify(userCompanyRepository, times(1)).findByUserId(userId);
-            verify(companyClient, times(1)).findById(eq(companyIdActive), anyString());
+            verify(companyRepository, times(1)).findById(companyIdActive);
             verify(loginTicketRepository, times(1)).save(any(LoginTicket.class));
 
             assertEquals(email, resp.user().email());
             assertEquals(1, resp.companies().size());
             assertEquals(companyIdActive, resp.companies().get(0).companyId());
-            assertEquals("Empresa SA", resp.companies().get(0).companyName());
+            assertEquals("Empresa Activa", resp.companies().get(0).companyName());
             assertEquals(activeUserCompany.getRole().name(), resp.companies().get(0).role());
             assertNotNull(resp.loginTicket());
         }
