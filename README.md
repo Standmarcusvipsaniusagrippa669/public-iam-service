@@ -1,45 +1,43 @@
-# Valiantech IAM Core API
+# 🔐 ValianTech IAM Core API
 
-## Introducción
-
-Valiantech IAM Core API es un sistema modular de gestión de identidad y acceso (IAM) diseñado para pequeñas y medianas empresas (PYMEs).  
-Ofrece funcionalidades robustas de autenticación, autorización, gestión de usuarios y empresas, auditoría y seguridad, con un enfoque en eficiencia y escalabilidad.
+**ValianTech IAM Core API** es un sistema modular de **gestión de identidad y acceso (IAM)** diseñado para PYMEs, startups y entornos SaaS multi-tenant.  
+Ofrece un backend seguro, escalable y extensible para autenticación, autorización y administración de usuarios y empresas.
 
 ---
 
-## Funcionalidades Clave
+## 🚀 Características principales
 
-- Autenticación segura con JWT y refresh tokens  
-- Login en dos pasos y control de sesión  
-- Gestión completa de usuarios, empresas y roles  
-- Flujo de invitaciones para incorporación de usuarios  
-- Auditoría detallada y registro de eventos críticos  
-- Integración configurable con servicios de correo y proveedores externos  
-- Configuración flexible para ambientes `local`, `develop`, `qa`, `prod`  
-
----
-
-## Tecnologías
-
-- Java 17, Spring Boot 3  
-- PostgreSQL con Flyway para migraciones  
-- Redis para manejo de sesiones y tokens  
-- Docker para contenedorización y despliegue  
-- Integración con Mailtrap y SendGrid para envío de emails  
+- 🔑 Autenticación basada en **JWT + Refresh Tokens**
+- 🔒 Login en dos pasos y control de sesiones activas
+- 🧩 Gestión completa de **usuarios, roles y empresas**
+- ✉️ Flujo de invitaciones para incorporación de usuarios
+- 🧠 Auditoría detallada y registro de eventos críticos
+- ⚙️ Integración configurable con proveedores externos (Mailtrap, SendGrid, etc.)
+- 🌎 Perfiles de ejecución: `local`, `develop`, `qa`, `prod`
 
 ---
 
-## Requisitos Previos
+## 🧱 Tecnologías
 
-- Docker y Docker Compose instalados  
-- Acceso a base de datos PostgreSQL y Redis (local o en la nube)  
-- Variables de entorno configuradas (ver sección Configuración)  
+- **Java 17**, **Spring Boot 3**
+- **PostgreSQL** + **Flyway** (migraciones)
+- **Redis** (sesiones y tokens)
+- **Docker** (contenedorización y despliegue)
+- **Gradle** o **Maven** (compilación flexible)
 
 ---
 
-## Configuración
+## ⚙️ Requisitos previos
 
-Define las siguientes variables de entorno en tu entorno Docker o sistema:
+- Docker y Docker Compose instalados
+- Acceso a PostgreSQL y Redis (local o remoto)
+- Variables de entorno configuradas correctamente (ver abajo)
+
+---
+
+## 🧩 Configuración
+
+Crea un archivo `.env` o define las variables de entorno equivalentes:
 
 ```env
 DATASOURCE_JDBC_URL=jdbc:postgresql://host.docker.internal:5432/iamdb
@@ -55,35 +53,32 @@ REDIS_PASSWORD=redispass
 REDIS_IS_CLUSTER=false
 
 RATE_LIMIT_WHITELIST=10.0.0.1,200.1.2.3
-INVITATION_REGISTRATION_URL_BASE=https://auth.techvalian.com/invitation
+INVITATION_REGISTRATION_URL_BASE=https://yourdomain.com/invitation
 INVITATION_TOKEN_EXPIRY_DAYS=1
 
 LOGGING_SENSITIVE_FIELDS=currentPassword,newPassword,password
-
-SMTP_HOST=sandbox.smtp.mailtrap.io
-SMTP_USERNAME=tu_usuario_mailtrap
-SMTP_PASSWORD=tu_password_mailtrap
 ```
 
 ---
 
-## Despliegue con Docker
+## 🐳 Despliegue con Docker
 
-### 1. Construir la imagen Docker
+### 1️⃣ Construir la imagen
 
-**JVM build**
+**Con Maven (JVM build):**
 ```bash
 ./mvnw clean package -DskipTests
 docker build -t valiantech-iam-core .
 ```
-**Compile build image**
+
+**Con Gradle (bootBuildImage):**
 ```bash
 ./gradlew clean bootBuildImage
 ```
 
-### 2. Ejecutar contenedores necesarios (PostgreSQL y Redis)
+---
 
-Si no tienes servicios externos, puedes usar Docker Compose:
+### 2️⃣ Levantar dependencias locales
 
 ```yaml
 version: '3.8'
@@ -110,12 +105,13 @@ volumes:
 ```
 
 Ejecuta:
-
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-### 3. Ejecutar la API
+---
+
+### 3️⃣ Ejecutar la API
 
 ```bash
 docker run --rm \
@@ -128,36 +124,55 @@ docker run --rm \
   -e REDIS_PORT=6379 \
   -e REDIS_PASSWORD=redispass \
   -e LOGGING_SENSITIVE_FIELDS=currentPassword,newPassword,password \
-  -e SMTP_HOST=sandbox.smtp.mailtrap.io \
-  -e SMTP_USERNAME=tu_usuario_mailtrap \
-  -e SMTP_PASSWORD=tu_password_mailtrap \
   -p 8080:8080 \
   valiantech-iam-core
 ```
 
-### 4. Accede a la API
+---
 
-Abre [http://localhost:8080/api/v1/](http://localhost:8080/api/v1/) y prueba los endpoints.
+## 📄 Licencia
+
+Este proyecto está bajo la licencia **MIT**, lo que permite su uso, modificación y distribución con fines personales o comerciales, siempre que se mantenga el aviso de copyright.
+
+```text
+MIT License
+
+Copyright (c) 2025 Ian Cárdenas
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ---
 
-## Documentación Adicional
+## 🤝 Contribuciones
 
-- Documentación técnica detallada (arquitectura, contribuciones) se encuentra en carpetas separadas.  
-- Para desarrollo local usa perfil `local` y configuración específica.  
-- Para producción considera variables de entorno y seguridad reforzada.
+Las contribuciones son bienvenidas.  
+Si deseas colaborar:
 
----
-
-## Contacto
-
-Para dudas o contribuciones contacta a [iancardenasc@valiantech.com](mailto:iancardenasc@valiantech.com).
+1. Haz un fork del repositorio.
+2. Crea una rama (`feature/nueva-funcionalidad`).
+3. Realiza tus cambios y abre un Pull Request.
+4. Incluye una breve descripción y evidencias si aplica.
 
 ---
 
-**© 2025 Valian Technologies SpA. Todos los derechos reservados.**
+## 📬 Contacto
 
-Este documento forma parte de un sistema informático de propiedad exclusiva de Valian Technologies SpA, empresa constituida en Chile.  
-Su uso, copia, distribución o reproducción total o parcial, para cualquier fin (incluyendo fines comerciales, educativos o de cualquier otra índole), está prohibido sin autorización expresa y por escrito de Valian Technologies SpA.
-
----
+Para consultas o soporte: **[contact@valiantech.com](mailto:contact@valiantech.com)**  
+Sitio web: [https://www.valiantech.com](https://www.valiantech.com)
