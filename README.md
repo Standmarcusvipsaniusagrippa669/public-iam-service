@@ -174,5 +174,4 @@ Si deseas colaborar:
 
 ## 📬 Contacto
 
-Para consultas o soporte: **[contact@valiantech.com](mailto:contact@valiantech.com)**  
-Sitio web: [https://www.valiantech.com](https://www.valiantech.com)
+Para consultas o soporte: **[iancardenasc@techvalian.com](mailto:iancardenasc@techvalian.com)**  
